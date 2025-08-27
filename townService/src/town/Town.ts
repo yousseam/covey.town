@@ -1,6 +1,7 @@
 import { ITiledMap, ITiledMapObjectLayer } from '@jonbell/tiled-map-type-guard';
 import { nanoid } from 'nanoid';
 import { BroadcastOperator } from 'socket.io';
+import InvalidParametersError from '../lib/InvalidParametersError';
 import IVideoClient from '../lib/IVideoClient';
 import Player from '../lib/Player';
 import TwilioVideo from '../lib/TwilioVideo';
@@ -10,12 +11,16 @@ import {
   ConversationArea as ConversationAreaModel,
   CoveyTownSocket,
   Interactable,
+  InteractableCommand,
+  InteractableCommandBase,
   PlayerLocation,
   ServerToClientEvents,
   SocketData,
   ViewingArea as ViewingAreaModel,
 } from '../types/CoveyTownSocket';
+import { logError } from '../Utils';
 import ConversationArea from './ConversationArea';
+import GameAreaFactory from './games/GameAreaFactory';
 import InteractableArea from './InteractableArea';
 import ViewingArea from './ViewingArea';
 
@@ -88,6 +93,8 @@ export default class Town {
 
   private _connectedSockets: Set<CoveyTownSocket> = new Set();
 
+  private _chatMessages: ChatMessage[] = [];
+
   constructor(
     friendlyName: string,
     isPubliclyListed: boolean,
@@ -131,12 +138,20 @@ export default class Town {
     // Set up a listener to forward all chat messages to all clients in the town
     socket.on('chatMessage', (message: ChatMessage) => {
       this._broadcastEmitter.emit('chatMessage', message);
+      this._chatMessages.push(message);
+      if (this._chatMessages.length > 200) {
+        this._chatMessages.shift();
+      }
     });
 
     // Register an event listener for the client socket: if the client updates their
     // location, inform the CoveyTownController
     socket.on('playerMovement', (movementData: PlayerLocation) => {
-      this._updatePlayerLocation(newPlayer, movementData);
+      try {
+        this._updatePlayerLocation(newPlayer, movementData);
+      } catch (err) {
+        logError(err);
+      }
     });
 
     // Set up a listener to process updates to interactables.
@@ -154,6 +169,49 @@ export default class Town {
         if (viewingArea) {
           (viewingArea as ViewingArea).updateModel(update);
         }
+      }
+    });
+
+    // Set up a listener to process commands to interactables.
+    // Dispatches commands to the appropriate interactable and sends the response back to the client
+    socket.on('interactableCommand', (command: InteractableCommand & InteractableCommandBase) => {
+      const interactable = this._interactables.find(
+        eachInteractable => eachInteractable.id === command.interactableID,
+      );
+      if (interactable) {
+        try {
+          const payload = interactable.handleCommand(command, newPlayer);
+          socket.emit('commandResponse', {
+            commandID: command.commandID,
+            interactableID: command.interactableID,
+            isOK: true,
+            payload,
+          });
+        } catch (err) {
+          if (err instanceof InvalidParametersError) {
+            socket.emit('commandResponse', {
+              commandID: command.commandID,
+              interactableID: command.interactableID,
+              isOK: false,
+              error: err.message,
+            });
+          } else {
+            logError(err);
+            socket.emit('commandResponse', {
+              commandID: command.commandID,
+              interactableID: command.interactableID,
+              isOK: false,
+              error: 'Unknown error',
+            });
+          }
+        }
+      } else {
+        socket.emit('commandResponse', {
+          commandID: command.commandID,
+          interactableID: command.interactableID,
+          isOK: false,
+          error: `No such interactable ${command.interactableID}`,
+        });
       }
     });
     return newPlayer;
@@ -309,6 +367,14 @@ export default class Town {
   }
 
   /**
+   * Retrieves all chat messages, optionally filtered by interactableID
+   * @param interactableID optional interactableID to filter by
+   */
+  public getChatMessages(interactableID: string | undefined) {
+    return this._chatMessages.filter(eachMessage => eachMessage.interactableID === interactableID);
+  }
+
+  /**
    * Informs all players' clients that they are about to be disconnected, and then
    * disconnects all players.
    */
@@ -352,7 +418,14 @@ export default class Town {
         ConversationArea.fromMapObject(eachConvAreaObj, this._broadcastEmitter),
       );
 
-    this._interactables = this._interactables.concat(viewingAreas).concat(conversationAreas);
+    const gameAreas = objectLayer.objects
+      .filter(eachObject => eachObject.type === 'GameArea')
+      .map(eachGameAreaObj => GameAreaFactory(eachGameAreaObj, this._broadcastEmitter));
+
+    this._interactables = this._interactables
+      .concat(viewingAreas)
+      .concat(conversationAreas)
+      .concat(gameAreas);
     this._validateInteractables();
   }
 

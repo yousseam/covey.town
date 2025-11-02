@@ -32,10 +32,12 @@ import {
   isConversationArea,
   isTicTacToeArea,
   isViewingArea,
+  isChessArea,
 } from '../types/TypeUtils';
 import ConnectFourAreaController from './interactable/ConnectFourAreaController';
 import ConversationAreaController from './interactable/ConversationAreaController';
 import GameAreaController, { GameEventTypes } from './interactable/GameAreaController';
+import ChessAreaController from './interactable/ChessAreaController';
 import InteractableAreaController, {
   BaseInteractableEventMap,
   GenericInteractableAreaController,
@@ -630,6 +632,10 @@ export default class TownController extends (EventEmitter as new () => TypedEmit
           } else if (isConnectFourArea(eachInteractable)) {
             this._interactableControllers.push(
               new ConnectFourAreaController(eachInteractable.id, eachInteractable, this),
+            );
+          } else if (isChessArea(eachInteractable)) {
+            this._interactableControllers.push(
+              new ChessAreaController(eachInteractable.id, eachInteractable, this),
             );
           }
         });

@@ -38,6 +38,6 @@ export function isChessArea(
   return interactable.type === 'ChessArea';
 }
 /* This function is a typeguard for the chess game area, it allows
-   the frontend to determin if an interactable object is a chess
+   the frontend to determine if an interactable object is a chess
    game area 
 */

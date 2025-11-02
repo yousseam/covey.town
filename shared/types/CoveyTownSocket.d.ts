@@ -17,7 +17,8 @@ export type TownJoinResponse = {
   interactables: TypedInteractable[];
 }
 
-export type InteractableType = 'ConversationArea' | 'ViewingArea' | 'TicTacToeArea' | 'ConnectFourArea';
+//The change here sets Chess as a valid interactable type
+export type InteractableType = 'ConversationArea' | 'ViewingArea' | 'TicTacToeArea' | 'ConnectFourArea' | 'ChessArea';
 export interface Interactable {
   type: InteractableType;
   id: InteractableID;

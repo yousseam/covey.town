@@ -31,3 +31,13 @@ export function isConnectFourArea(
 ): interactable is GameArea<ConnectFourGameState> {
   return interactable.type === 'ConnectFourArea';
 }
+
+export function isChessArea(
+  interactable: Interactable,
+): interactable is GameArea<any> {
+  return interactable.type === 'ChessArea';
+}
+/* This function is a typeguard for the chess game area, it allows
+   the frontend to determin if an interactable object is a chess
+   game area 
+*/

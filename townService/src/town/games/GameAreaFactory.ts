@@ -3,6 +3,10 @@ import { BoundingBox, TownEmitter } from '../../types/CoveyTownSocket';
 import InteractableArea from '../InteractableArea';
 import ConnectFourGameArea from './ConnectFourGameArea';
 import TicTacToeGameArea from './TicTacToeGameArea';
+/*
+This file is needed to support the 'Chess' game type
+*/
+import ChessGameArea from './ChessGameArea';
 
 /**
  * Creates a new GameArea from a map object
@@ -26,6 +30,13 @@ export default function GameAreaFactory(
   }
   if (gameType === 'ConnectFour') {
     return new ConnectFourGameArea(name, rect, broadcastEmitter);
+  }
+  /* Without this case we would see the familiar runtime
+     unknown game area type error, this line ensures
+     a game area type === 'Chess'
+  */
+  if (gameType === 'Chess') {
+    return new ChessGameArea(name, rect, broadcastEmitter);
   }
   throw new Error(`Unknown game area type ${mapObject.class}`);
 }

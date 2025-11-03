@@ -7,3 +7,5 @@ generated
 # stryker temp files
 .stryker-tmp
 reports
+
+/build/

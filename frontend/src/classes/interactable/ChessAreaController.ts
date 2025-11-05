@@ -1,7 +1,4 @@
-import {
-  GameArea,
-  GameStatus,
-} from '../../types/CoveyTownSocket';
+import { GameArea, GameStatus } from '../../types/CoveyTownSocket';
 import PlayerController from '../PlayerController';
 import GameAreaController, {
   GameEventTypes,
@@ -23,7 +20,6 @@ export type ChessEvents = GameEventTypes & {
  * Full game logic (moves, turns, etc.) will be added later.
  */
 export default class ChessAreaController extends GameAreaController<any, ChessEvents> {
-
   /**
    * Returns the status of the game.
    * For now, always WAITING_FOR_PLAYERS (since backend logic isn’t implemented).
@@ -88,4 +84,3 @@ export default class ChessAreaController extends GameAreaController<any, ChessEv
     return winnerID ? this.occupants.find(p => p.id === winnerID) : undefined;
   }
 }
-

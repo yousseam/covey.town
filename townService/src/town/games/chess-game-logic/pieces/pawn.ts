@@ -1,7 +1,7 @@
-import { Color, Coords, FENChar } from "../models";
-import { Piece } from "./piece";
+import { Color, Coords, FENChar } from '../models';
+import Piece from './piece';
 
-export class Pawn extends Piece {
+export default class Pawn extends Piece {
   /* 
     The _hasMoved identifier is used to define if the piece has moved in a previous
     turn of the game to check for the validity of special moves such as castling(rook and king) and en'passant(pawn).
@@ -10,23 +10,25 @@ export class Pawn extends Piece {
 
     for cheking the value of _hasMoved, the getter funciton; hasMoved(); can be used.
   */
-  private _hasMoved: boolean = false;
+  private _hasMoved = false;
+
   protected override _FENChar: FENChar;
+
   protected override _directions: Coords[] = [
-    {x: 1, y: 0},
-    {x: 2, y: 0},
-    {x: 1, y: 1},
-    {x: 1, y: -1}
+    { x: 1, y: 0 },
+    { x: 2, y: 0 },
+    { x: 1, y: 1 },
+    { x: 1, y: -1 },
   ];
 
-  constructor(private pieceColor: Color) {
-    super(pieceColor);
-    if (pieceColor === Color.Black) this.setBlackPawnDirections();
-    this._FENChar = pieceColor === Color.White ? FENChar.WhitePawn : FENChar.BlackPawn;
+  constructor(private _pieceColor: Color) {
+    super(_pieceColor);
+    if (_pieceColor === Color.Black) this._setBlackPawnDirections();
+    this._FENChar = _pieceColor === Color.White ? FENChar.WhitePawn : FENChar.BlackPawn;
   }
 
-  private setBlackPawnDirections(): void {
-    this._directions = this._directions.map(({x, y}) => ({x: -1*x, y}));
+  private _setBlackPawnDirections(): void {
+    this._directions = this._directions.map(({ x, y }) => ({ x: -1 * x, y }));
   }
 
   public get hasMoved(): boolean {
@@ -36,10 +38,10 @@ export class Pawn extends Piece {
   public set hasMoved(_) {
     this._hasMoved = true;
     this._directions = [
-      {x: 1, y: 0},
-      {x: 1, y: 1},
-      {x: 1, y: -1}
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+      { x: 1, y: -1 },
     ];
-    if (this.pieceColor === Color.Black) this.setBlackPawnDirections();
+    if (this._pieceColor === Color.Black) this._setBlackPawnDirections();
   }
 }

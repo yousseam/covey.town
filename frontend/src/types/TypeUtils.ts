@@ -32,9 +32,7 @@ export function isConnectFourArea(
   return interactable.type === 'ConnectFourArea';
 }
 
-export function isChessArea(
-  interactable: Interactable,
-): interactable is GameArea<any> {
+export function isChessArea(interactable: Interactable): interactable is GameArea<any> {
   return interactable.type === 'ChessArea';
 }
 /* This function is a typeguard for the chess game area, it allows

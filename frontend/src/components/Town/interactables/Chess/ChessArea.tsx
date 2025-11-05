@@ -5,16 +5,16 @@ import ChessBoard from './ChessBoard';
 
 /**
  * ChessArea.tsx
- * 
+ *
  * Handles the Chess game modal UI that appears when the player interacts
  * with the chess area in the game world.
- * 
+ *
  * Displays:
  *  - Game status text (not started / in progress)
  *  - Player slots for Black and White
  *  - Two join buttons (2-player, vs bot)
  *  - The static chessboard (rendered by ChessBoard.tsx)
- * 
+ *
  * All logic here is frontend-only (no backend integration yet).
  */
 
@@ -39,9 +39,7 @@ export default function ChessArea({
 
   return (
     <VStack spacing={4} align='start'>
-      <Text fontWeight='bold'>
-        {gameStarted ? 'Game in progress.' : 'Game not yet started.'}
-      </Text>
+      <Text fontWeight='bold'>{gameStarted ? 'Game in progress.' : 'Game not yet started.'}</Text>
 
       <Flex justify='space-between' w='100%'>
         <VStack align='start'>

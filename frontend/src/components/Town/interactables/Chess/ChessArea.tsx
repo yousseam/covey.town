@@ -1,6 +1,10 @@
-import { Button, Flex, Box, Text, VStack } from '@chakra-ui/react';
-import React, { useState } from 'react';
-import { InteractableID } from '../../../../types/CoveyTownSocket';
+import { Button, Flex, Box, Text, VStack, useToast } from '@chakra-ui/react';
+import React, { useEffect, useState } from 'react';
+import ChessAreaController from '../../../../classes/interactable/ChessAreaController';
+import PlayerController from '../../../../classes/PlayerController';
+import { useInteractableAreaController } from '../../../../classes/TownController';
+import useTownController from '../../../../hooks/useTownController';
+import { GameStatus, InteractableID } from '../../../../types/CoveyTownSocket';
 import ChessBoard from './ChessBoard';
 
 /**
@@ -23,18 +27,43 @@ export default function ChessArea({
 }: {
   interactableID: InteractableID;
 }): JSX.Element {
+  const gameAreaController = useInteractableAreaController<ChessAreaController>(interactableID);
+  const townController = useTownController();
+
   const [blackPlayer, setBlackPlayer] = useState<string | undefined>();
   const [whitePlayer, setWhitePlayer] = useState<string | undefined>();
+  const [joiningGame, setJoiningGame] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  const toast = useToast();
 
-  const handleJoinTwoPlayer = () => {
+  useEffect(() => {
+    const updateGameState = () => {
+      // TODO: implement this
+    }
+    const onGameEnd = () => {
+      // TODO: implement this
+    }
+    gameAreaController.addListener('gameUpdated', updateGameState);
+    gameAreaController.addListener('gameEnd', onGameEnd);
+    return () => {
+      gameAreaController.removeListener('gameUpdated', updateGameState);
+      gameAreaController.removeListener('gameEnd', onGameEnd);
+    };
+
+  }, [townController, gameAreaController, toast]);
+
+  const handleJoinTwoPlayer = async () => {
     setGameStarted(true);
-    setWhitePlayer('Player 1'); // Placeholder for now
+    setWhitePlayer('Player 1'); // Placeholder for now    
+
+    // TODO: implement this
   };
 
   const handleJoinBot = () => {
     setGameStarted(true);
     setBlackPlayer('Bot'); // Placeholder for future AI integration
+
+    // TODO: implement this
   };
 
   return (
@@ -51,7 +80,9 @@ export default function ChessArea({
           <Button size='sm' colorScheme='gray' onClick={handleJoinTwoPlayer}>
             Join 2-player Game
           </Button>
-          <Button size='sm' colorScheme='gray' onClick={handleJoinBot}>
+          <Button size='sm' colorScheme='gray' onClick={handleJoinBot} 
+            isLoading={joiningGame}
+            disabled={joiningGame}>
             Join Game with Bot
           </Button>
         </VStack>

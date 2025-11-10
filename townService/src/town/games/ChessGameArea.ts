@@ -2,10 +2,13 @@
 import InvalidParametersError, { INVALID_COMMAND_MESSAGE } from '../../lib/InvalidParametersError';
 import Player from '../../lib/Player';
 import {
+  ChessGameState,
+  GameInstance,
   InteractableCommand,
   InteractableCommandReturnType,
   InteractableType,
 } from '../../types/CoveyTownSocket';
+import ChessGame from './ChessGame';
 import GameArea from './GameArea';
 
 /* Once the backend logic is ready <any> will be replaced by 
@@ -15,6 +18,12 @@ export default class ChessGameArea extends GameArea<any> {
     return 'ChessArea';
   }
 
+  private _stateUpdated(updatedState: GameInstance<ChessGameState>) {
+    // TODO: implement this
+
+    this._emitAreaChanged();
+  }
+
   /* Minimal stub: satisfy abstract method so the backend can boot. 
     For now our handleCommand function throws an error for any interaction */
   public handleCommand<CommandType extends InteractableCommand>(
@@ -22,6 +31,20 @@ export default class ChessGameArea extends GameArea<any> {
     _player: Player,
   ): InteractableCommandReturnType<CommandType> {
     // No chess backend yet — reject all commands for now.
+
+    if (_command.type === 'GameMove') {
+      // TODO: implement this
+    }
+    if (_command.type === 'JoinGame') {
+      // TODO: implement this
+    }
+    if (_command.type === 'LeaveGame') {
+      // TODO: implement this
+    }
+    if (_command.type === 'StartGame') {
+      // TODO: implement this
+    }
+    
     throw new InvalidParametersError(INVALID_COMMAND_MESSAGE);
   }
 }

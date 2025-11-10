@@ -1,3 +1,5 @@
+import { Color, Coords, FENChar } from '../../src/tow/games/chess-game-logic/models'
+
 export type TownJoinResponse = {
   /** Unique ID that represents this player * */
   userID: string;
@@ -161,6 +163,39 @@ export type ConnectFourRowIndex = 0 | 1 | 2 | 3 | 4 | 5;
 export type ConnectFourColIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export type ConnectFourColor = 'Red' | 'Yellow';
+
+/* Chess exports */
+
+/**
+ * Type for the state of a Chess game.
+ * The state of the game is represented as a list of moves, and the playerIDs of the players (black and white)
+ */
+export interface ChessGameState extends WinnableGameState {
+  // The moves in this game
+  moves: ReadonlyArray<ChessMove>;
+  // The playerID of the black player, if any
+  black?: PlayerID;
+  // The playerID of the white player, if any
+  white?: PlayerID;
+  // Whether the red player is ready to start the game
+  blackReady?: boolean;
+  // Whether the white player is ready to start the game
+  whiteReady?: boolean;
+  // The color of the player who will make the first move
+  firstPlayer: Color;
+}
+
+/**
+ * Type for a move in Chess
+ */
+export interface ChessMove {
+  gamePiece: FENChar; 
+  pieceColor: Color;
+  oldCol: Coords.x;
+  oldRow: Coords.y;
+  newCol: Coords.x;
+  newRow: Coords.y;
+}
 
 export type InteractableID = string;
 export type GameInstanceID = string;

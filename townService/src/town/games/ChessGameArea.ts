@@ -19,7 +19,26 @@ export default class ChessGameArea extends GameArea<any> {
   }
 
   private _stateUpdated(updatedState: GameInstance<ChessGameState>) {
-    // TODO: implement this
+    if (updatedState.state.status === 'OVER') {
+      // If we haven't yet recorded the outcome, do so now.
+      const gameID = this._game?.id;
+      if (gameID && !this._history.find(eachResult => eachResult.gameID === gameID)) {
+        const { white, black } = updatedState.state;
+        if (white && black) {
+          const whiteName =
+            this._occupants.find(eachPlayer => eachPlayer.id === white)?.userName || white;
+          const blackName =
+            this._occupants.find(eachPlayer => eachPlayer.id === black)?.userName || black;
+          this._history.push({
+            gameID,
+            scores: {
+              [whiteName]: updatedState.state.winner === white ? 1 : 0,
+              [blackName]: updatedState.state.winner === black ? 1 : 0,
+            },
+          });
+        }
+      }
+    }
 
     this._emitAreaChanged();
   }
@@ -36,7 +55,15 @@ export default class ChessGameArea extends GameArea<any> {
       // TODO: implement this
     }
     if (_command.type === 'JoinGame') {
-      // TODO: implement this
+      let game = this._game;
+      if (!game || game.state.status === 'OVER') {
+        // No game in progress, make a new one
+        game = new ChessGame(this._game);
+        this._game = game;
+      }
+      game.join(_player);
+      this._stateUpdated(game.toModel());
+      return { gameID: game.id } as InteractableCommandReturnType<CommandType>;
     }
     if (_command.type === 'LeaveGame') {
       // TODO: implement this
@@ -44,7 +71,7 @@ export default class ChessGameArea extends GameArea<any> {
     if (_command.type === 'StartGame') {
       // TODO: implement this
     }
-    
+
     throw new InvalidParametersError(INVALID_COMMAND_MESSAGE);
   }
 }

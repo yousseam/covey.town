@@ -30,15 +30,21 @@ export default function ChessArea({
   const gameAreaController = useInteractableAreaController<ChessAreaController>(interactableID);
   const townController = useTownController();
 
-  const [blackPlayer, setBlackPlayer] = useState<string | undefined>();
-  const [whitePlayer, setWhitePlayer] = useState<string | undefined>();
+  const [blackPlayer, setBlackPlayer] = useState<PlayerController | undefined>(gameAreaController.black);
+  const [whitePlayer, setWhitePlayer] = useState<PlayerController | undefined>(gameAreaController.white);
   const [joiningGame, setJoiningGame] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+
+  const [gameStatus, setGameStatus] = useState<GameStatus>(gameAreaController.status);
+  const [moveCount, setMoveCount] = useState<number>(gameAreaController.moveCount);
   const toast = useToast();
 
   useEffect(() => {
     const updateGameState = () => {
-      // TODO: implement this
+      setBlackPlayer(gameAreaController.black)
+      setWhitePlayer(gameAreaController.white)
+      setGameStatus(gameAreaController.status || 'WAITING_TO_START');
+      setMoveCount(gameAreaController.moveCount || 0);
     }
     const onGameEnd = () => {
       // TODO: implement this
@@ -54,14 +60,24 @@ export default function ChessArea({
 
   const handleJoinTwoPlayer = async () => {
     setGameStarted(true);
-    setWhitePlayer('Player 1'); // Placeholder for now    
+    //setWhitePlayer('Player 1'); // Placeholder for now    
 
-    // TODO: implement this
+    setJoiningGame(true);
+    try {
+      await gameAreaController.joinGame();
+    } catch (err) {
+      toast({
+        title: 'Error joining game',
+        description: (err as Error).toString(),
+        status: 'error',
+      });
+    }
+    setJoiningGame(false);
   };
 
   const handleJoinBot = () => {
     setGameStarted(true);
-    setBlackPlayer('Bot'); // Placeholder for future AI integration
+    //setBlackPlayer('Bot'); // Placeholder for future AI integration
 
     // TODO: implement this
   };
@@ -72,15 +88,17 @@ export default function ChessArea({
 
       <Flex justify='space-between' w='100%'>
         <VStack align='start'>
-          <Text>White: {whitePlayer || '(No player yet!)'}</Text>
-          <Text>Black: {blackPlayer || '(No player yet!)'}</Text>
+          <Text>White: {whitePlayer?.userName || '(No player yet!)'}</Text>
+          <Text>Black: {blackPlayer?.userName || '(No player yet!)'}</Text>
         </VStack>
 
         <VStack spacing={2} align='end'>
-          <Button size='sm' colorScheme='gray' onClick={handleJoinTwoPlayer}>
+          <Button size='sm' colorScheme='gray' onClick={handleJoinTwoPlayer}
+            isLoading={joiningGame}
+            disabled={joiningGame}>
             Join 2-player Game
           </Button>
-          <Button size='sm' colorScheme='gray' onClick={handleJoinBot} 
+          <Button size='sm' colorScheme='gray' onClick={handleJoinBot}
             isLoading={joiningGame}
             disabled={joiningGame}>
             Join Game with Bot

@@ -53,12 +53,15 @@ export default class ChessAreaController extends GameAreaController<
   }
 
   /**
-   * Returns the status of the game.
-   * For now, always WAITING_FOR_PLAYERS (since backend logic isn’t implemented).
+   * Returns the status of the game
+   * If there is no game, returns 'WAITING_FOR_PLAYERS'
    */
   get status(): GameStatus {
-    // TODO: implement this
-    return 'WAITING_FOR_PLAYERS';
+    const status = this._model.game?.state.status;
+    if (!status) {
+      return 'WAITING_FOR_PLAYERS';
+    }
+    return status;
   }
 
   /**
@@ -121,9 +124,15 @@ export default class ChessAreaController extends GameAreaController<
   }
 
   get white(): PlayerController | undefined {
+    /*
     const whiteID: string | undefined = (this._model as any)?.game?.white;
-    console.log("whiteID: ", whiteID)
     return whiteID ? this.occupants.find(p => p.id === whiteID) : undefined;
+    */
+    const white = this._model.game?.state.white;
+    if (white) {
+      return this.occupants.find(eachOccupant => eachOccupant.id === white);
+    }
+    return undefined;
   }
 
   get black(): PlayerController | undefined {

@@ -105,7 +105,11 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
         const newRow = row as ChessGridPosition
         const newCol = col as ChessGridPosition
         setSelected(null);
-        await gameAreaController.makeMove(oldRow, oldCol, newRow, newCol);
+        //await gameAreaController.makeMove(oldRow, oldCol, newRow, newCol);
+        // NOTE: temporary fake visual move, use makeMove instead when it is implemented
+        board[newRow][newCol] = board[oldRow][oldCol];
+        board[oldRow][oldCol] = undefined;
+        setBoard(board);
       } catch (e) {
         toast({
           title: 'Error making move',

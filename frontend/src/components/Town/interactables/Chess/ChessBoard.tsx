@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Box, Text, Flex, useToast, chakra } from '@chakra-ui/react';
-import ChessAreaController, { ChessCell } from '../../../../classes/interactable/ChessAreaController';
+import ChessAreaController, {
+  ChessCell,
+} from '../../../../classes/interactable/ChessAreaController';
 import { ChessGridPosition } from '../../../../types/CoveyTownSocket';
 
 export type ChessGameProps = {
   gameAreaController: ChessAreaController;
 };
 
-const SPRITE_SHEET = "/assets/chess-sprite.png";
+const SPRITE_SHEET = '/assets/chess-sprite.png';
 const SPRITE_SIZE = 128;
 const CELL_SIZE = 48;
 
-const files = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+const FILES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const RANKS = [8, 7, 6, 5, 4, 3, 2, 1];
 
 type PieceKey = 'K' | 'Q' | 'R' | 'B' | 'N' | 'P' | 'k' | 'q' | 'r' | 'b' | 'n' | 'p';
 
@@ -102,8 +104,8 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
       try {
         const oldRow = selected.row as ChessGridPosition;
         const oldCol = selected.col as ChessGridPosition;
-        const newRow = row as ChessGridPosition
-        const newCol = col as ChessGridPosition
+        const newRow = row as ChessGridPosition;
+        const newCol = col as ChessGridPosition;
         setSelected(null);
         //await gameAreaController.makeMove(oldRow, oldCol, newRow, newCol);
         // NOTE: temporary fake visual move, use makeMove instead when it is implemented
@@ -123,19 +125,19 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
   };
 
   return (
-    <StyledChessBoard aria-label="Chess Board">
+    <StyledChessBoard aria-label='Chess Board'>
       {/* Main board with vertical rank labels */}
-      {ranks.map((rank, rIndex) => (
+      {RANKS.map((rank, rIndex) => (
         <Flex key={rank}>
           {/* Rank numbers along the left side */}
-          <Box w="18px" display="flex" alignItems="center" justifyContent="center">
-            <Text fontSize="sm" color="gray.700">
+          <Box w='18px' display='flex' alignItems='center' justifyContent='center'>
+            <Text fontSize='sm' color='gray.700'>
               {rank}
             </Text>
           </Box>
 
           {/* Row of chess squares */}
-          {files.map((file, fIndex) => {
+          {FILES.map((file, fIndex) => {
             const piece = board[rIndex][fIndex] as ChessCell;
             const isDark = (rIndex + fIndex) % 2 === 1;
 
@@ -151,10 +153,10 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
             return (
               <StyledChessSquare
                 key={`${rank}${file}`}
-                bg={isSelected ? (isDark ? '#464' : '#cfc') : (isDark ? 'gray.600' : 'white')}
+                bg={isSelected ? (isDark ? '#464' : '#cfc') : isDark ? 'gray.600' : 'white'}
                 {...getPieceStyle(piece)}
                 {...borderStyles}
-                onClick={async () => await handleClick(rIndex, fIndex)}
+                onClick={async () => handleClick(rIndex, fIndex)}
                 aria-label={`Cell ${rank}${file}`}
               />
             );
@@ -164,9 +166,9 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
 
       {/* File (A–H) labels below the board */}
       <Flex mt={1}>
-        <Box w="18px" /> {/* offset for rank numbers */}
-        {files.map((letter) => (
-          <Text key={letter} w={`${CELL_SIZE}px`} textAlign="center" fontSize="sm">
+        <Box w='18px' /> {/* offset for rank numbers */}
+        {FILES.map(letter => (
+          <Text key={letter} w={`${CELL_SIZE}px`} textAlign='center' fontSize='sm'>
             {letter}
           </Text>
         ))}

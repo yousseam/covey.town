@@ -1,5 +1,3 @@
-import { Color, Coords, FENChar } from '../../src/tow/games/chess-game-logic/models'
-
 export type TownJoinResponse = {
   /** Unique ID that represents this player * */
   userID: string;
@@ -182,20 +180,22 @@ export interface ChessGameState extends WinnableGameState {
   // Whether the white player is ready to start the game
   whiteReady?: boolean;
   // The color of the player who will make the first move
-  firstPlayer: Color;
+  firstPlayer: ChessColor;
 }
 
 /**
  * Type for a move in Chess
  */
 export interface ChessMove {
-  gamePiece: FENChar; 
-  pieceColor: Color;
-  oldCol: Coords.x;
-  oldRow: Coords.y;
-  newCol: Coords.x;
-  newRow: Coords.y;
+  gamePiece: ChessColor;
+  oldRow: ChessGridPosition;
+  oldCol: ChessGridPosition;
+  newRow: ChessGridPosition;
+  newCol: ChessGridPosition;
 }
+
+export type ChessColor = 'White' | 'Black';
+export type ChessGridPosition = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export type InteractableID = string;
 export type GameInstanceID = string;
@@ -252,7 +252,7 @@ interface InteractableCommandBase {
   type: string;
 }
 
-export type InteractableCommand =  ViewingAreaUpdateCommand | JoinGameCommand | GameMoveCommand<TicTacToeMove> | GameMoveCommand<ConnectFourMove> | StartGameCommand | LeaveGameCommand;
+export type InteractableCommand =  ViewingAreaUpdateCommand | JoinGameCommand | GameMoveCommand<TicTacToeMove> | GameMoveCommand<ConnectFourMove> | GameMoveCommand<ChessMove> | StartGameCommand | LeaveGameCommand;
 export interface ViewingAreaUpdateCommand  {
   type: 'ViewingAreaUpdate';
   update: ViewingArea;

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Box, Button, Flex, HStack, Text, VStack } from '@chakra-ui/react';
 
 /**
- * ChessBoardInteractive.tsx
+ * ChessBoard.tsx
  *
  * Minimal piece movement with NO rule checking.
  * - Click a square with a piece to select it.

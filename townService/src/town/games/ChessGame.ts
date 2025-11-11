@@ -27,7 +27,9 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
 
   protected _join(player: Player): void {
     // TODO: implement this
-
+    if (this.state.white === player.id || this.state.black === player.id) {
+      throw new InvalidParametersError(PLAYER_ALREADY_IN_GAME_MESSAGE);
+    }
     if (!this.state.white) {
       this.state = {
         ...this.state,
@@ -71,5 +73,42 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
 
   protected _leave(player: Player): void {
     // TODO: implement this
+
+    if (this.state.status === 'OVER') {
+      return;
+    }
+    const removePlayer = (playerID: string): Color => {
+      if (this.state.white === playerID) {
+        this.state = {
+          ...this.state,
+          white: undefined,
+        };
+        return 0;
+      }
+      if (this.state.black === playerID) {
+        this.state = {
+          ...this.state,
+          black: undefined,
+        };
+        return 1;
+      }
+      throw new InvalidParametersError(PLAYER_NOT_IN_GAME_MESSAGE);
+    };
+    const color = removePlayer(player.id);
+    switch (this.state.status) {
+      case 'WAITING_TO_START':
+      case 'WAITING_FOR_PLAYERS':
+        this.state.status = 'WAITING_FOR_PLAYERS';
+        break;
+      case 'IN_PROGRESS':
+        this.state = {
+          ...this.state,
+          status: 'OVER',
+          winner: color === 0 ? this.state.black : this.state.white,
+        };
+        break;
+      default:
+        throw new Error(`Unexpected game status: ${this.state.status}`);
+    }
   }
 }

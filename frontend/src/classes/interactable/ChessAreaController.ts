@@ -13,7 +13,20 @@ import GameAreaController, {
   PLAYER_NOT_IN_GAME_ERROR,
 } from './GameAreaController';
 
-export type ChessCell = 'K' | 'Q' | 'R' | 'B' | 'N' | 'P' | 'k' | 'q' | 'r' | 'b' | 'n' | 'p' | undefined;
+export type ChessCell =
+  | 'K'
+  | 'Q'
+  | 'R'
+  | 'B'
+  | 'N'
+  | 'P'
+  | 'k'
+  | 'q'
+  | 'r'
+  | 'b'
+  | 'n'
+  | 'p'
+  | undefined;
 export type ChessEvents = GameEventTypes & {
   boardChanged: (board: ChessCell[][]) => void;
   turnChanged: (isOurTurn: boolean) => void;
@@ -25,10 +38,7 @@ export type ChessEvents = GameEventTypes & {
  * Lets players interact with the Chess area (pressing space) without crashing.
  * Full game logic (moves, turns, etc.) will be added later.
  */
-export default class ChessAreaController extends GameAreaController<
-  ChessGameState,
-  ChessEvents
-> {
+export default class ChessAreaController extends GameAreaController<ChessGameState, ChessEvents> {
   protected _board: ChessCell[][] = [
     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
     ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
@@ -104,7 +114,12 @@ export default class ChessAreaController extends GameAreaController<
   /**
    * Stub for making a chess move. Currently throws to show it’s not ready yet.
    */
-  public async makeMove(oldRow: ChessGridPosition, oldCol: ChessGridPosition, newRow: ChessGridPosition, newCol: ChessGridPosition) {
+  public async makeMove(
+    oldRow: ChessGridPosition,
+    oldCol: ChessGridPosition,
+    newRow: ChessGridPosition,
+    newCol: ChessGridPosition,
+  ) {
     const instanceID = this._instanceID;
     if (!instanceID || this._model.game?.state.status !== 'IN_PROGRESS') {
       throw new Error(NO_GAME_IN_PROGRESS_ERROR);
@@ -124,10 +139,6 @@ export default class ChessAreaController extends GameAreaController<
   }
 
   get white(): PlayerController | undefined {
-    /*
-    const whiteID: string | undefined = (this._model as any)?.game?.white;
-    return whiteID ? this.occupants.find(p => p.id === whiteID) : undefined;
-    */
     const white = this._model.game?.state.white;
     if (white) {
       return this.occupants.find(eachOccupant => eachOccupant.id === white);
@@ -136,8 +147,11 @@ export default class ChessAreaController extends GameAreaController<
   }
 
   get black(): PlayerController | undefined {
-    const blackID: string | undefined = (this._model as any)?.game?.black;
-    return blackID ? this.occupants.find(p => p.id === blackID) : undefined;
+    const black = this._model.game?.state.black;
+    if (black) {
+      return this.occupants.find(eachOccupant => eachOccupant.id === black);
+    }
+    return undefined;
   }
 
   get winner(): PlayerController | undefined {

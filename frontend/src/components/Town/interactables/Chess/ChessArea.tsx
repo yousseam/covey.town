@@ -30,8 +30,12 @@ export default function ChessArea({
   const gameAreaController = useInteractableAreaController<ChessAreaController>(interactableID);
   const townController = useTownController();
 
-  const [blackPlayer, setBlackPlayer] = useState<PlayerController | undefined>(gameAreaController.black);
-  const [whitePlayer, setWhitePlayer] = useState<PlayerController | undefined>(gameAreaController.white);
+  const [blackPlayer, setBlackPlayer] = useState<PlayerController | undefined>(
+    gameAreaController.black,
+  );
+  const [whitePlayer, setWhitePlayer] = useState<PlayerController | undefined>(
+    gameAreaController.white,
+  );
   const [joiningGame, setJoiningGame] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
 
@@ -41,26 +45,25 @@ export default function ChessArea({
 
   useEffect(() => {
     const updateGameState = () => {
-      setBlackPlayer(gameAreaController.black)
-      setWhitePlayer(gameAreaController.white)
+      setBlackPlayer(gameAreaController.black);
+      setWhitePlayer(gameAreaController.white);
       setGameStatus(gameAreaController.status || 'WAITING_TO_START');
       setMoveCount(gameAreaController.moveCount || 0);
-    }
+    };
     const onGameEnd = () => {
       // TODO: implement this
-    }
+    };
     gameAreaController.addListener('gameUpdated', updateGameState);
     gameAreaController.addListener('gameEnd', onGameEnd);
     return () => {
       gameAreaController.removeListener('gameUpdated', updateGameState);
       gameAreaController.removeListener('gameEnd', onGameEnd);
     };
-
   }, [townController, gameAreaController, toast]);
 
   const handleJoinTwoPlayer = async () => {
     setGameStarted(true);
-    //setWhitePlayer('Player 1'); // Placeholder for now    
+    //setWhitePlayer('Player 1'); // Placeholder for now
 
     setJoiningGame(true);
     try {
@@ -93,12 +96,18 @@ export default function ChessArea({
         </VStack>
 
         <VStack spacing={2} align='end'>
-          <Button size='sm' colorScheme='gray' onClick={handleJoinTwoPlayer}
+          <Button
+            size='sm'
+            colorScheme='gray'
+            onClick={handleJoinTwoPlayer}
             isLoading={joiningGame}
             disabled={joiningGame}>
             Join 2-player Game
           </Button>
-          <Button size='sm' colorScheme='gray' onClick={handleJoinBot}
+          <Button
+            size='sm'
+            colorScheme='gray'
+            onClick={handleJoinBot}
             isLoading={joiningGame}
             disabled={joiningGame}>
             Join Game with Bot

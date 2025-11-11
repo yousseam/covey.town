@@ -5,6 +5,7 @@ import {
   ViewingArea,
   GameArea,
   ConnectFourGameState,
+  ChessGameState,
 } from './CoveyTownSocket';
 
 /**
@@ -32,10 +33,6 @@ export function isConnectFourArea(
   return interactable.type === 'ConnectFourArea';
 }
 
-export function isChessArea(interactable: Interactable): interactable is GameArea<any> {
+export function isChessArea(interactable: Interactable): interactable is GameArea<ChessGameState> {
   return interactable.type === 'ChessArea';
 }
-/* This function is a typeguard for the chess game area, it allows
-   the frontend to determine if an interactable object is a chess
-   game area 
-*/

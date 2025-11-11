@@ -1,5 +1,6 @@
 import {
   ChessGameState,
+  ChessGridPosition,
   ChessMove,
   GameArea,
   GameStatus,
@@ -12,13 +13,10 @@ import GameAreaController, {
   PLAYER_NOT_IN_GAME_ERROR,
 } from './GameAreaController';
 
-export type ChessCell = undefined; // TODO: implement this
-
-/**
- * Placeholder event types for Chess — expand later when moves are implemented.
- */
+export type ChessCell = 'K' | 'Q' | 'R' | 'B' | 'N' | 'P' | 'k' | 'q' | 'r' | 'b' | 'n' | 'p' | undefined;
 export type ChessEvents = GameEventTypes & {
-  boardChanged?: () => void; // optional future event
+  boardChanged: (board: ChessCell[][]) => void;
+  turnChanged: (isOurTurn: boolean) => void;
   // TODO: implement this
 };
 
@@ -27,9 +25,32 @@ export type ChessEvents = GameEventTypes & {
  * Lets players interact with the Chess area (pressing space) without crashing.
  * Full game logic (moves, turns, etc.) will be added later.
  */
-export default class ChessAreaController extends GameAreaController<ChessGameState, ChessEvents> {
+export default class ChessAreaController extends GameAreaController<
+  ChessGameState,
+  ChessEvents
+> {
+  protected _board: ChessCell[][] = [
+    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+    Array(8).fill(undefined),
+    Array(8).fill(undefined),
+    Array(8).fill(undefined),
+    Array(8).fill(undefined),
+    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+  ];
 
-  //protected _board: ChessCell[][] = [][8];  // TODO: implement this?
+  /**
+   * Returns the current state of the board.
+   *
+   * The board is a 8x8 array of ChessCell, which is either FENChar or undefined.
+   *
+   * The 2-dimensional array is indexed by row and then column, so board[0][0] is the top-left cell,
+   * and board[7][7] is the bottom-right cell
+   */
+  get board(): ChessCell[][] {
+    return this._board;
+  }
 
   /**
    * Returns the status of the game
@@ -42,12 +63,6 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     }
     return status;
   }
-
-  /*
-  get board(): ChessCell[][] {
-    return this._board;
-  }
-  */
 
   /**
    * Returns true if the current player is in the game.
@@ -89,9 +104,23 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   /**
    * Stub for making a chess move. Currently throws to show it’s not ready yet.
    */
-  public async makeMove(): Promise<void> {
-    // TODO: implement this
-    throw new Error(NO_GAME_IN_PROGRESS_ERROR);
+  public async makeMove(oldRow: ChessGridPosition, oldCol: ChessGridPosition, newRow: ChessGridPosition, newCol: ChessGridPosition) {
+    const instanceID = this._instanceID;
+    if (!instanceID || this._model.game?.state.status !== 'IN_PROGRESS') {
+      throw new Error(NO_GAME_IN_PROGRESS_ERROR);
+    }
+    // TODO: gamePiece getter needs to be defined
+    /*await this._townController.sendInteractableCommand(this.id, {
+      type: 'GameMove',
+      gameID: instanceID,
+      move: {
+        oldRow,
+        oldCol,
+        newRow,
+        newCol,
+        gamePiece: this.gamePiece,
+      },
+    });*/
   }
 
   get white(): PlayerController | undefined {

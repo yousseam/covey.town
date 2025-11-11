@@ -89,7 +89,7 @@ export default function ChessArea({
       </Flex>
 
       <Box>
-        <ChessBoard />
+        <ChessBoard gameAreaController={gameAreaController} />
       </Box>
     </VStack>
   );

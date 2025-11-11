@@ -1,10 +1,5 @@
 import Player from '../../lib/Player';
-import {
-    ChessGameState,
-    ChessMove,
-    GameMove,
-    PlayerID,
-} from '../../types/CoveyTownSocket';
+import { ChessGameState, ChessMove, GameMove, PlayerID } from '../../types/CoveyTownSocket';
 import { Color, Coords, FENChar } from './chess-game-logic/models';
 import Game from './Game';
 
@@ -13,7 +8,6 @@ import Game from './Game';
  */
 
 export default class ChessGame extends Game<ChessGameState, ChessMove> {
-
     public constructor(priorGame?: ChessGame) {
         super({
             moves: [],
@@ -24,8 +18,16 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
 
     protected _join(player: Player): void {
         // TODO: implement this
+        
+        if (!this.state.white) {
+            this.state = {
+                ...this.state,
+                status: 'WAITING_FOR_PLAYERS',
+                white: player.id,
+            };
+        }
     }
-    
+
     public startGame(player: Player): void {
         // TODO: implement this
     }

@@ -92,6 +92,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   }
 
   public isActive(): boolean {
+    // TODO: implement this
     return false;
   }
 
@@ -100,6 +101,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
    * Currently does nothing but can later track board state.
    */
   protected _updateFrom(newModel: GameArea<any>): void {
+    // TODO: implement this
     super._updateFrom(newModel);
   }
 

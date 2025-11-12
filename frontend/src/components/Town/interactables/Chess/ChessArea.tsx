@@ -51,7 +51,7 @@ export default function ChessArea({
       setMoveCount(gameAreaController.moveCount || 0);
     };
     const onGameEnd = () => {
-      // TODO: implement this
+      // TODO: implement this; Final working game states task
     };
     gameAreaController.addListener('gameUpdated', updateGameState);
     gameAreaController.addListener('gameEnd', onGameEnd);
@@ -62,9 +62,6 @@ export default function ChessArea({
   }, [townController, gameAreaController, toast]);
 
   const handleJoinTwoPlayer = async () => {
-    setGameStarted(true);
-    //setWhitePlayer('Player 1'); // Placeholder for now
-
     setJoiningGame(true);
     try {
       await gameAreaController.joinGame();
@@ -78,16 +75,72 @@ export default function ChessArea({
     setJoiningGame(false);
   };
 
-  const handleJoinBot = () => {
-    setGameStarted(true);
-    //setBlackPlayer('Bot'); // Placeholder for future AI integration
+  const handleStartGame = async () => {
+    setJoiningGame(true);
+    try {
+      await gameAreaController.startGame();
+    } catch (err) {
+      toast({
+        title: 'Error joining game',
+        description: (err as Error).toString(),
+        status: 'error',
+      });
+    }
+    setJoiningGame(false);
+  };
 
+  const handleJoinBot = () => {
+    //setGameStarted(true);
+    //setBlackPlayer('Bot'); // Placeholder for future AI integration
     // TODO: implement this
   };
 
+  let vsButton = <></>;
+  if (gameStatus == 'IN_PROGRESS') {
+    vsButton = <></>;
+  } else if (gameStatus == 'WAITING_TO_START') {
+    vsButton = (
+      <Button
+        size='sm'
+        colorScheme='gray'
+        onClick={handleStartGame}
+        isLoading={joiningGame}
+        disabled={joiningGame}>
+        Start Game
+      </Button>
+    );
+  } else {
+    vsButton = (
+      <Button
+        size='sm'
+        colorScheme='gray'
+        onClick={handleJoinTwoPlayer}
+        isLoading={joiningGame}
+        disabled={joiningGame}>
+        Join 2-player Game
+      </Button>
+    );
+  }
+
+  let botButton = <></>;
+  if (gameStatus !== 'IN_PROGRESS') {
+    botButton = (
+      <Button
+        size='sm'
+        colorScheme='gray'
+        onClick={handleJoinBot}
+        isLoading={joiningGame}
+        disabled={joiningGame}>
+        Join Game with Bot
+      </Button>
+    );
+  }
+
   return (
     <VStack spacing={4} align='start'>
-      <Text fontWeight='bold'>{gameStarted ? 'Game in progress.' : 'Game not yet started.'}</Text>
+      <Text fontWeight='bold'>
+        {gameStatus === 'IN_PROGRESS' ? 'Game in progress.' : 'Game not yet started.'}
+      </Text>
 
       <Flex justify='space-between' w='100%'>
         <VStack align='start'>
@@ -96,22 +149,8 @@ export default function ChessArea({
         </VStack>
 
         <VStack spacing={2} align='end'>
-          <Button
-            size='sm'
-            colorScheme='gray'
-            onClick={handleJoinTwoPlayer}
-            isLoading={joiningGame}
-            disabled={joiningGame}>
-            Join 2-player Game
-          </Button>
-          <Button
-            size='sm'
-            colorScheme='gray'
-            onClick={handleJoinBot}
-            isLoading={joiningGame}
-            disabled={joiningGame}>
-            Join Game with Bot
-          </Button>
+          {vsButton}
+          {botButton}
         </VStack>
       </Flex>
 

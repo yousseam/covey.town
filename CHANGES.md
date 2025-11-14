@@ -12,3 +12,10 @@
         - Added menu/board interface upon interaction(ChessBoard.tsx, ChessArea.tsx)
         - Integrated ChessArea into GameArea.tsx
         - Integrated ChessAreaController into TownController.ts
+
+- `11/12/2025`
+    - Added Test Suite for ChessArea.tsx(ChessArea.test.tsx)
+    - Added Test Suite for ChessBoard.tsx(ChessBoard.test.tsx)
+    - Added Test Suite for ChessAreaController.ts(ChessAreaController.test.ts)
+    - Testing for Game States are reliant on the completion of the backend, when
+       win/lose/draw/leave/join conditions are fully implemented

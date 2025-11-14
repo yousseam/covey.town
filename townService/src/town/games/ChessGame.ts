@@ -26,7 +26,6 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
   }
 
   protected _join(player: Player): void {
-    // TODO: implement this
     if (this.state.white === player.id || this.state.black === player.id) {
       throw new InvalidParametersError(PLAYER_ALREADY_IN_GAME_MESSAGE);
     }
@@ -51,7 +50,22 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
   }
 
   public startGame(player: Player): void {
-    // TODO: implement this
+    if (this.state.status !== 'WAITING_TO_START') {
+      throw new InvalidParametersError(GAME_NOT_STARTABLE_MESSAGE);
+    }
+    if (this.state.white !== player.id && this.state.black !== player.id) {
+      throw new InvalidParametersError(PLAYER_NOT_IN_GAME_MESSAGE);
+    }
+    if (this.state.white === player.id) {
+      this.state.whiteReady = true;
+    }
+    if (this.state.black === player.id) {
+      this.state.blackReady = true;
+    }
+    this.state = {
+      ...this.state,
+      status: this.state.whiteReady && this.state.blackReady ? 'IN_PROGRESS' : 'WAITING_TO_START',
+    };
   }
 
   public applyMove(move: GameMove<ChessMove>): void {
@@ -72,11 +86,6 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
   }
 
   protected _leave(player: Player): void {
-    // TODO: implement this
-
-    if (this.state.status === 'OVER') {
-      return;
-    }
     const removePlayer = (playerID: string): Color => {
       if (this.state.white === playerID) {
         this.state = {
@@ -98,13 +107,21 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     switch (this.state.status) {
       case 'WAITING_TO_START':
       case 'WAITING_FOR_PLAYERS':
-        this.state.status = 'WAITING_FOR_PLAYERS';
+      case 'OVER':
+        this.state = {
+          ...this.state,
+          status: 'WAITING_FOR_PLAYERS',
+          whiteReady: false,
+          blackReady: false,
+        };
         break;
       case 'IN_PROGRESS':
         this.state = {
           ...this.state,
           status: 'OVER',
           winner: color === 0 ? this.state.black : this.state.white,
+          whiteReady: false,
+          blackReady: false,
         };
         break;
       default:

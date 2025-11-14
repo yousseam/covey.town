@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Box, Text, Flex, useToast, chakra } from '@chakra-ui/react';
+import { Container, Box, Button, Text, Flex, useToast, chakra } from '@chakra-ui/react';
 import ChessAreaController, {
   ChessCell,
 } from '../../../../classes/interactable/ChessAreaController';
@@ -36,11 +36,14 @@ const spriteMap: Record<PieceKey, { x: number; y: number }> = {
 /**
  * A component that will render a single cell in the Chess board, styled
  */
-const StyledChessSquare = chakra(Box, {
+const StyledChessSquare = chakra(Button, {
   baseStyle: {
     height: `${CELL_SIZE}px`,
     width: `${CELL_SIZE}px`,
     userSelect: 'none',
+    _disabled: {
+      opacity: "90%"
+    }
   },
 });
 /**
@@ -158,6 +161,8 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
                 {...borderStyles}
                 onClick={async () => handleClick(rIndex, fIndex)}
                 aria-label={`Cell ${rank}${file}`}
+                colorScheme='none'
+                disabled={false} /*TODO: change condition to !isOurTurn when alternating turns are implemented*/
               />
             );
           })}

@@ -192,6 +192,7 @@ export interface ChessMove {
   oldCol: ChessGridPosition;
   newRow: ChessGridPosition;
   newCol: ChessGridPosition;
+  promotion?: 'Q' | 'R' | 'B' | 'N';
 }
 
 export type ChessColor = 'White' | 'Black';

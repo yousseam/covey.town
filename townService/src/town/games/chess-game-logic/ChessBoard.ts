@@ -8,7 +8,7 @@ import Queen from './pieces/queen';
 import Rook from './pieces/rook';
 
 export default class ChessBoard {
-  private _chessBoard: (Piece | null)[][];
+  private _chessBoard: (Piece | undefined)[][];
 
   private _playerColor = Color.White;
 
@@ -34,10 +34,10 @@ export default class ChessBoard {
         new Pawn(Color.White),
         new Pawn(Color.White),
       ],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
+      [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+      [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+      [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+      [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
       [
         new Pawn(Color.Black),
         new Pawn(Color.Black),
@@ -66,10 +66,10 @@ export default class ChessBoard {
     return this._playerColor;
   }
 
-  // returns current board format in FENChar or null values
-  public get chessBoardView(): (FENChar | null)[][] {
+  // returns current board format in FENChar or undefined values
+  public get chessBoardView(): (FENChar | undefined)[][] {
     return this._chessBoard.map(row =>
-      row.map(piece => (piece instanceof Piece ? piece.FENChar : null)),
+      row.map(piece => (piece instanceof Piece ? piece.FENChar : undefined)),
     );
   }
 

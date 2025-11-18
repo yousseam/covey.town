@@ -1,4 +1,4 @@
-import { Button, Flex, Box, Text, VStack, useToast, Badge } from '@chakra-ui/react';
+import { Button, Flex, Box, Text, VStack, useToast } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import ChessAreaController from '../../../../classes/interactable/ChessAreaController';
 import PlayerController from '../../../../classes/PlayerController';
@@ -159,46 +159,26 @@ export default function ChessArea({
     );
   }
 
-  const statusText =
-    gameStatus === 'IN_PROGRESS'
-      ? 'Game in progress.'
-      : gameStatus === 'WAITING_TO_START'
-        ? 'Waiting for both players to be ready.'
-        : 'Game not yet started.';
-
   return (
     <VStack spacing={4} align='start'>
-      <Flex justify='space-between' w='100%' align='center'>
-        <VStack align='start' spacing={1}>
-          <Text fontWeight='bold'>{statusText}</Text>
-          <Text fontSize='sm'>Moves played: {moveCount}</Text>
-          {gameStatus === 'IN_PROGRESS' && (
-            <Badge colorScheme={isOurTurn ? 'green' : 'gray'}>
-              {isOurTurn ? 'Your turn' : "Opponent's turn"}
-            </Badge>
-          )}
+      <Text fontWeight='bold'>
+        {gameStatus === 'IN_PROGRESS'
+          ? isOurTurn
+            ? 'Your turn.'
+            : 'Waiting for opponent.'
+          : 'Game not yet started.'}
+      </Text>
+
+      <Flex justify='space-between' w='100%'>
+        <VStack align='start'>
+          <Text>White: {whitePlayer?.userName || '(No player yet!)'}</Text>
+          <Text>Black: {blackPlayer?.userName || '(No player yet!)'}</Text>
+          <Text>Moves played: {moveCount}</Text>
         </VStack>
 
         <VStack spacing={2} align='end'>
           {vsButton}
           {botButton}
-        </VStack>
-      </Flex>
-
-      <Flex justify='space-between' w='100%'>
-        <VStack align='start'>
-          <Text>
-            White:{' '}
-            <Box as='span' fontWeight='semibold'>
-              {whitePlayer?.userName || '(No player yet!)'}
-            </Box>
-          </Text>
-          <Text>
-            Black:{' '}
-            <Box as='span' fontWeight='semibold'>
-              {blackPlayer?.userName || '(No player yet!)'}
-            </Box>
-          </Text>
         </VStack>
       </Flex>
 

@@ -1,4 +1,4 @@
-import { Button, Flex, Box, Text, VStack, useToast } from '@chakra-ui/react';
+import { Button, Flex, Box, Text, VStack, useToast, Badge } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import ChessAreaController from '../../../../classes/interactable/ChessAreaController';
 import PlayerController from '../../../../classes/PlayerController';
@@ -17,9 +17,6 @@ import ChessBoard from './ChessBoard';
  *  - Game status text (not started / in progress)
  *  - Player slots for Black and White
  *  - Two join buttons (2-player, vs bot)
- *  - The static chessboard (rendered by ChessBoard.tsx)
- *
- * All logic here is frontend-only (no backend integration yet).
  */
 
 export default function ChessArea({
@@ -29,6 +26,7 @@ export default function ChessArea({
 }): JSX.Element {
   const gameAreaController = useInteractableAreaController<ChessAreaController>(interactableID);
   const townController = useTownController();
+  const toast = useToast();
 
   const [blackPlayer, setBlackPlayer] = useState<PlayerController | undefined>(
     gameAreaController.black,
@@ -37,11 +35,10 @@ export default function ChessArea({
     gameAreaController.white,
   );
   const [joiningGame, setJoiningGame] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
 
   const [gameStatus, setGameStatus] = useState<GameStatus>(gameAreaController.status);
   const [moveCount, setMoveCount] = useState<number>(gameAreaController.moveCount);
-  const toast = useToast();
+  const [isOurTurn, setIsOurTurn] = useState<boolean>(gameAreaController.isOurTurn);
 
   useEffect(() => {
     const updateGameState = () => {
@@ -49,12 +46,35 @@ export default function ChessArea({
       setWhitePlayer(gameAreaController.white);
       setGameStatus(gameAreaController.status || 'WAITING_TO_START');
       setMoveCount(gameAreaController.moveCount || 0);
+      setIsOurTurn(gameAreaController.isOurTurn);
     };
+
     const onGameEnd = () => {
-      // TODO: implement this; Final working game states task
+      const winner = gameAreaController.winner;
+      if (winner) {
+        toast({
+          title: 'Game over',
+          description:
+            winner.id === townController.ourPlayer.id
+              ? 'You won the game!'
+              : `${winner.userName} won the game.`,
+          status: 'info',
+        });
+      } else {
+        toast({
+          title: 'Game over',
+          description: 'The game ended in a draw.',
+          status: 'info',
+        });
+      }
     };
+
     gameAreaController.addListener('gameUpdated', updateGameState);
     gameAreaController.addListener('gameEnd', onGameEnd);
+
+    // Initialize once in case we mounted mid-game
+    updateGameState();
+
     return () => {
       gameAreaController.removeListener('gameUpdated', updateGameState);
       gameAreaController.removeListener('gameEnd', onGameEnd);
@@ -81,7 +101,7 @@ export default function ChessArea({
       await gameAreaController.startGame();
     } catch (err) {
       toast({
-        title: 'Error joining game',
+        title: 'Error starting game',
         description: (err as Error).toString(),
         status: 'error',
       });
@@ -90,15 +110,18 @@ export default function ChessArea({
   };
 
   const handleJoinBot = () => {
-    //setGameStarted(true);
-    //setBlackPlayer('Bot'); // Placeholder for future AI integration
-    // TODO: implement this
+    // Placeholder: not implemented yet
+    toast({
+      title: 'Not implemented',
+      description: 'Bot games are not implemented yet.',
+      status: 'info',
+    });
   };
 
   let vsButton = <></>;
-  if (gameStatus == 'IN_PROGRESS') {
+  if (gameStatus === 'IN_PROGRESS') {
     vsButton = <></>;
-  } else if (gameStatus == 'WAITING_TO_START') {
+  } else if (gameStatus === 'WAITING_TO_START') {
     vsButton = (
       <Button
         size='sm'
@@ -136,21 +159,46 @@ export default function ChessArea({
     );
   }
 
+  const statusText =
+    gameStatus === 'IN_PROGRESS'
+      ? 'Game in progress.'
+      : gameStatus === 'WAITING_TO_START'
+        ? 'Waiting for both players to be ready.'
+        : 'Game not yet started.';
+
   return (
     <VStack spacing={4} align='start'>
-      <Text fontWeight='bold'>
-        {gameStatus === 'IN_PROGRESS' ? 'Game in progress.' : 'Game not yet started.'}
-      </Text>
-
-      <Flex justify='space-between' w='100%'>
-        <VStack align='start'>
-          <Text>White: {whitePlayer?.userName || '(No player yet!)'}</Text>
-          <Text>Black: {blackPlayer?.userName || '(No player yet!)'}</Text>
+      <Flex justify='space-between' w='100%' align='center'>
+        <VStack align='start' spacing={1}>
+          <Text fontWeight='bold'>{statusText}</Text>
+          <Text fontSize='sm'>Moves played: {moveCount}</Text>
+          {gameStatus === 'IN_PROGRESS' && (
+            <Badge colorScheme={isOurTurn ? 'green' : 'gray'}>
+              {isOurTurn ? 'Your turn' : "Opponent's turn"}
+            </Badge>
+          )}
         </VStack>
 
         <VStack spacing={2} align='end'>
           {vsButton}
           {botButton}
+        </VStack>
+      </Flex>
+
+      <Flex justify='space-between' w='100%'>
+        <VStack align='start'>
+          <Text>
+            White:{' '}
+            <Box as='span' fontWeight='semibold'>
+              {whitePlayer?.userName || '(No player yet!)'}
+            </Box>
+          </Text>
+          <Text>
+            Black:{' '}
+            <Box as='span' fontWeight='semibold'>
+              {blackPlayer?.userName || '(No player yet!)'}
+            </Box>
+          </Text>
         </VStack>
       </Flex>
 

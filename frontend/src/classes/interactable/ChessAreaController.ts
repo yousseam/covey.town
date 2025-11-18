@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ChessGameState,
   ChessGridPosition,
   ChessMove,
-  GameArea,
+  GameArea as ChessGameAreaModel,
   GameStatus,
+  ChessColor,
 } from '../../types/CoveyTownSocket';
 import PlayerController from '../PlayerController';
 import GameAreaController, {
@@ -30,13 +32,11 @@ export type ChessCell =
 export type ChessEvents = GameEventTypes & {
   boardChanged: (board: ChessCell[][]) => void;
   turnChanged: (isOurTurn: boolean) => void;
-  // TODO: implement this
 };
 
 /**
- * Minimal placeholder controller for the Chess game area.
- * Lets players interact with the Chess area (pressing space) without crashing.
- * Full game logic (moves, turns, etc.) will be added later.
+ * Controller for a Chess game area on the client.
+ * Keeps a local board view, tracks whose turn it is, and sends
  */
 export default class ChessAreaController extends GameAreaController<ChessGameState, ChessEvents> {
   protected _board: ChessCell[][] = [
@@ -75,34 +75,135 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   }
 
   /**
-   * Returns true if the current player is in the game.
-   * For now, always false until player join logic exists.
+   * True if the current client player is one of the game players (white or black)
    */
   get isPlayer(): boolean {
-    // TODO: implement this
-    return false;
+    const state = this._model.game?.state;
+    if (!state) {
+      return false;
+    }
+    const ourID = this._townController.ourPlayer.id;
+    return state.white === ourID || state.black === ourID;
   }
 
   /**
-   * Returns the player whose turn it is — not yet implemented.
+   * Returns the PlayerController whose turn it currently is, or undefined if
+   * the game is not in progress.
    */
   get whoseTurn(): PlayerController | undefined {
-    // TODO: implement this
+    const game = this._model.game;
+    if (!game || game.state.status !== 'IN_PROGRESS') {
+      return undefined;
+    }
+    const movesSoFar = game.state.moves.length;
+    const first = game.state.firstPlayer;
+
+    // White moves on even
+    const whiteToMove = first === 'White' ? movesSoFar % 2 === 0 : movesSoFar % 2 === 1;
+    return whiteToMove ? this.white : this.black;
+  }
+
+  /**
+   * Returns true if this game is active for us (we are a player and the game is in progress)
+   */
+  public isActive(): boolean {
+    return this.isPlayer && this.status === 'IN_PROGRESS';
+  }
+
+  /**
+   * Called whenever the backend sends an updated GameArea model.
+   * We mirror the game state into a local board.
+   */
+  protected _updateFrom(newModel: ChessGameAreaModel<ChessGameState>): void {
+    super._updateFrom(newModel);
+
+    const game = newModel.game;
+    if (!game) {
+      // No game instance, reset board to initial position
+      this._board = [
+        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+        ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+        Array(8).fill(undefined),
+        Array(8).fill(undefined),
+        Array(8).fill(undefined),
+        Array(8).fill(undefined),
+        ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+      ];
+      this.emit('boardChanged', this._board);
+      this.emit('turnChanged', false);
+      return;
+    }
+
+    // Start from a fresh initial board and replay all moves from state
+    const board: ChessCell[][] = [
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      Array(8).fill(undefined),
+      Array(8).fill(undefined),
+      Array(8).fill(undefined),
+      Array(8).fill(undefined),
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+    ];
+
+    for (const mv of game.state.moves) {
+      const { oldRow, oldCol, newRow, newCol, promotion, gamePiece } = mv;
+      const movingPiece = board[oldRow][oldCol];
+
+      // Clear source square
+      board[oldRow][oldCol] = undefined;
+
+      // Handle promotion
+      if (promotion && movingPiece && (movingPiece === 'P' || movingPiece === 'p')) {
+        const isWhite = gamePiece === 'White';
+        const promoLetter = promotion; // 'Q' | 'R' | 'B' | 'N'
+        const promoPiece = (isWhite ? promoLetter : promoLetter.toLowerCase()) as ChessCell;
+        board[newRow][newCol] = promoPiece;
+      } else {
+        // Normal move, just move the piece
+        board[newRow][newCol] = movingPiece;
+      }
+    }
+
+    this._board = board;
+    this.emit('boardChanged', this._board);
+    this.emit('turnChanged', this.isOurTurn);
+  }
+
+  get white(): PlayerController | undefined {
+    const white = this._model.game?.state.white;
+    if (white) {
+      return this.occupants.find(eachOccupant => eachOccupant.id === white);
+    }
     return undefined;
   }
 
-  public isActive(): boolean {
-    // TODO: implement this
-    return false;
+  get black(): PlayerController | undefined {
+    const black = this._model.game?.state.black;
+    if (black) {
+      return this.occupants.find(eachOccupant => eachOccupant.id === black);
+    }
+    return undefined;
+  }
+
+  get winner(): PlayerController | undefined {
+    const winnerID: string | undefined = this._model.game?.state.winner;
+    return winnerID ? this.occupants.find(p => p.id === winnerID) : undefined;
   }
 
   /**
-   * Called when backend sends an update.
-   * Currently does nothing but can later track board state.
+   * Returns the number of moves that have been made in the game
    */
-  protected _updateFrom(newModel: GameArea<any>): void {
-    // TODO: implement this
-    super._updateFrom(newModel);
+  get moveCount(): number {
+    return this._model.game?.state.moves.length || 0;
+  }
+
+  /**
+   * Returns true if it is our turn to make a move, false otherwise
+   */
+  get isOurTurn(): boolean {
+    return this.whoseTurn?.id === this._townController.ourPlayer.id;
   }
 
   /**
@@ -124,20 +225,37 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   }
 
   /**
-   * Stub for making a chess move. Currently throws to show it’s not ready yet.
+   * Sends a ChessMove to the backend.
    */
   public async makeMove(
     oldRow: ChessGridPosition,
     oldCol: ChessGridPosition,
     newRow: ChessGridPosition,
     newCol: ChessGridPosition,
-  ) {
+    promotion?: 'Q' | 'R' | 'B' | 'N',
+  ): Promise<void> {
     const instanceID = this._instanceID;
-    if (!instanceID || this._model.game?.state.status !== 'IN_PROGRESS') {
+    const game = this._model.game;
+
+    if (!instanceID || !game || game.state.status !== 'IN_PROGRESS') {
       throw new Error(NO_GAME_IN_PROGRESS_ERROR);
     }
-    // TODO: gamePiece getter needs to be defined
-    /*await this._townController.sendInteractableCommand(this.id, {
+
+    const state = game.state;
+    const ourID = this._townController.ourPlayer.id;
+
+    if (ourID !== state.white && ourID !== state.black) {
+      throw new Error(PLAYER_NOT_IN_GAME_ERROR);
+    }
+
+    const whose = this.whoseTurn;
+    if (!whose || whose.id !== ourID) {
+      throw new Error(NO_GAME_IN_PROGRESS_ERROR);
+    }
+
+    const gamePiece: ChessColor = whose === this.white ? 'White' : 'Black';
+
+    await this._townController.sendInteractableCommand(this.id, {
       type: 'GameMove',
       gameID: instanceID,
       move: {
@@ -145,62 +263,9 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
         oldCol,
         newRow,
         newCol,
-        gamePiece: this.gamePiece,
-      },
-    });*/
+        gamePiece,
+        ...(promotion ? { promotion } : {}),
+      } as ChessMove,
+    });
   }
-
-  get white(): PlayerController | undefined {
-    const white = this._model.game?.state.white;
-    if (white) {
-      return this.occupants.find(eachOccupant => eachOccupant.id === white);
-    }
-    return undefined;
-  }
-
-  get black(): PlayerController | undefined {
-    const black = this._model.game?.state.black;
-    if (black) {
-      return this.occupants.find(eachOccupant => eachOccupant.id === black);
-    }
-    return undefined;
-  }
-
-  get winner(): PlayerController | undefined {
-    const winnerID: string | undefined = (this._model as any)?.game?.winner;
-    return winnerID ? this.occupants.find(p => p.id === winnerID) : undefined;
-  }
-
-  /**
-   * Returns the number of moves that have been made in the game
-   */
-  get moveCount(): number {
-    return this._model.game?.state.moves.length || 0;
-  }
-
-  /**
-   * Returns true if it is our turn to make a move, false otherwise
-   */
-  get isOurTurn(): boolean {
-    return this.whoseTurn?.id === this._townController.ourPlayer.id;
-  }
-
-  /*
-  get gamePiece(): FENChar? {
-    // TODO: implement this
-  }
-
-  isEmpty(): boolean {
-    // TODO: implement this
-  }
-  
-  public isActive(): boolean {
-    // TODO: implement this
-  }
-
-  protected _updateFrom(newModel: GameArea<ChessGameState>): void {
-    // TODO: implement this
-  }
-  
-  */
 }

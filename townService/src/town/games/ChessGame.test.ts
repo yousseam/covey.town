@@ -1,3 +1,4 @@
+import { Chess } from 'chess.ts';
 import ChessGame from './ChessGame';
 import InvalidParametersError, {
   BOARD_POSITION_NOT_VALID_MESSAGE,
@@ -7,7 +8,6 @@ import InvalidParametersError, {
 } from '../../lib/InvalidParametersError';
 import Player from '../../lib/Player';
 import { ChessMove, ChessGameState, GameMove } from '../../types/CoveyTownSocket';
-import { Chess } from 'chess.ts';
 
 function makePlayer(id: string, userName: string): Player {
   // Adapt this constructor to your actual Player class
@@ -30,15 +30,20 @@ function squareToRowCol(square: string): { row: number; col: number } {
   return { row, col };
 }
 
-function makeChessMove(from: string, to: string, gamePiece: 'White' | 'Black', promotion?: 'Q'|'R'|'B'|'N'): ChessMove {
+function makeChessMove(
+  from: string,
+  to: string,
+  gamePiece: 'White' | 'Black',
+  promotion?: 'Q' | 'R' | 'B' | 'N',
+): ChessMove {
   const { row: oldRow, col: oldCol } = squareToRowCol(from);
   const { row: newRow, col: newCol } = squareToRowCol(to);
   return {
     gamePiece,
-    oldRow: oldRow as 0|1|2|3|4|5|6|7,
-    oldCol: oldCol as 0|1|2|3|4|5|6|7,
-    newRow: newRow as 0|1|2|3|4|5|6|7,
-    newCol: newCol as 0|1|2|3|4|5|6|7,
+    oldRow: oldRow as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
+    oldCol: oldCol as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
+    newRow: newRow as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
+    newCol: newCol as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
     ...(promotion ? { promotion } : {}),
   };
 }
@@ -64,7 +69,7 @@ describe('ChessGame', () => {
   });
 
   test('initial state after both players ready is IN_PROGRESS with white to move', () => {
-    const state: ChessGameState = (game as any).state;
+    const { state } = game as any;
     expect(state.status).toBe('IN_PROGRESS');
     expect(state.white).toBe(white.id);
     expect(state.black).toBe(black.id);
@@ -86,7 +91,7 @@ describe('ChessGame', () => {
     const gm = makeGameMove(white.id, gameID, move);
     expect(() => game.applyMove(gm)).not.toThrow();
 
-    const state: ChessGameState = (game as any).state;
+    const { state } = game as any;
     expect(state.moves.length).toBe(1);
     const lastMove = state.moves[0];
     expect(lastMove.oldRow).toBe(squareToRowCol('e2').row);
@@ -125,7 +130,7 @@ describe('ChessGame', () => {
     // Sequence:
     // 1. f3 e5
     // 2. g4 Qh4#
-    const moves: { player: Player; sanFrom: string; sanTo: string; color: 'White'|'Black' }[] = [
+    const moves: { player: Player; sanFrom: string; sanTo: string; color: 'White' | 'Black' }[] = [
       { player: white, sanFrom: 'f2', sanTo: 'f3', color: 'White' },
       { player: black, sanFrom: 'e7', sanTo: 'e5', color: 'Black' },
       { player: white, sanFrom: 'g2', sanTo: 'g4', color: 'White' },
@@ -138,7 +143,7 @@ describe('ChessGame', () => {
       expect(() => game.applyMove(gm)).not.toThrow();
     });
 
-    const state: ChessGameState = (game as any).state;
+    const { state } = game as any;
     expect(state.status).toBe('OVER');
     expect(state.winner).toBe(black.id);
   });
@@ -151,7 +156,7 @@ describe('ChessGame', () => {
     // Black leaves
     (game as any)._leave(black);
 
-    const state: ChessGameState = (game as any).state;
+    const { state } = game as any;
     expect(state.status).toBe('OVER');
     expect(state.winner).toBe(white.id);
   });

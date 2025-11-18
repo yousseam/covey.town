@@ -62,8 +62,8 @@ export default function ChessArea({
   }, [townController, gameAreaController, toast]);
 
   /**
-  * Called when the player clicks the "Join 2-player Game" button
-  */
+   * Called when the player clicks the "Join 2-player Game" button
+   */
   const handleJoinTwoPlayer = async () => {
     setJoiningGame(true);
     try {

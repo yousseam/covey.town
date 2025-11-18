@@ -42,8 +42,8 @@ const StyledChessSquare = chakra(Button, {
     width: `${CELL_SIZE}px`,
     userSelect: 'none',
     _disabled: {
-      opacity: "90%"
-    }
+      opacity: '90%',
+    },
   },
 });
 /**
@@ -162,7 +162,9 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
                 onClick={async () => handleClick(rIndex, fIndex)}
                 aria-label={`Cell ${rank}${file}`}
                 colorScheme='none'
-                disabled={false} /*TODO: change condition to !isOurTurn when alternating turns are implemented*/
+                disabled={
+                  false
+                } /*TODO: change condition to !isOurTurn when alternating turns are implemented*/
               />
             );
           })}

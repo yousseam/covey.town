@@ -19,24 +19,31 @@ jest.mock('@chakra-ui/react', () => {
   return { ...ui, useToast: () => mockToast };
 });
 
-jest.spyOn(ChessBoard, 'default').mockReturnValue(<div data-testid="chessboard" />);
+jest.spyOn(ChessBoard, 'default').mockReturnValue(<div data-testid='chessboard' />);
 
 class MockChessAreaController extends ChessAreaController {
   joinGame = jest.fn();
+
   mockStatus: GameStatus = 'WAITING_FOR_PLAYERS';
+
   mockWhite?: PlayerController;
+
   mockBlack?: PlayerController;
+
   mockMoveCount = 0;
 
   get status() {
     return this.mockStatus;
   }
+
   get white() {
     return this.mockWhite;
   }
+
   get black() {
     return this.mockBlack;
   }
+
   get moveCount() {
     return this.mockMoveCount;
   }
@@ -62,9 +69,9 @@ describe('ChessArea (frontend only)', () => {
       mock<GameArea<any>>(),
       mock<TownController>(),
     );
-    jest.spyOn(TownControllerHooks, 'useInteractableAreaController').mockReturnValue(
-      gameAreaController,
-    );
+    jest
+      .spyOn(TownControllerHooks, 'useInteractableAreaController')
+      .mockReturnValue(gameAreaController);
     mockToast.mockClear();
   });
 
@@ -129,4 +136,3 @@ describe('ChessArea (frontend only)', () => {
     expect(screen.getByTestId('chessboard')).toBeInTheDocument();
   });
 });
-

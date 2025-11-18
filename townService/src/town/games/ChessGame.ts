@@ -1,3 +1,4 @@
+import { Chess } from 'chess.ts';
 import InvalidParametersError, {
   BOARD_POSITION_NOT_VALID_MESSAGE,
   GAME_FULL_MESSAGE,
@@ -8,19 +9,24 @@ import InvalidParametersError, {
   PLAYER_NOT_IN_GAME_MESSAGE,
 } from '../../lib/InvalidParametersError';
 import Player from '../../lib/Player';
-import { ChessGameState, ChessMove, GameMove, PlayerID, ChessColor } from '../../types/CoveyTownSocket';
+import {
+  ChessGameState,
+  ChessMove,
+  GameMove,
+  PlayerID,
+  ChessColor,
+} from '../../types/CoveyTownSocket';
 import { Color, Coords, FENChar } from './chess-game-logic/models';
 import Game from './Game';
-import { Chess } from 'chess.ts';
 
 /**
  * A ChessGame is a Game that implements the rules of Chess.
  */
 
 export default class ChessGame extends Game<ChessGameState, ChessMove> {
-    private _engine: Chess;
+  private _engine: Chess;
 
-    public constructor(priorGame?: ChessGame) {
+  public constructor(priorGame?: ChessGame) {
     super({
       moves: [],
       status: 'WAITING_FOR_PLAYERS',
@@ -32,9 +38,9 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
   /* ------------------ Helper Functions ------------------ */
   /** Convert grid row/col (0..7, top-left origin) to 'a1'..'h8'. */
   private _toSquareFromRowCol(row: number, col: number): string {
-    const files = ['a','b','c','d','e','f','g','h'];
-    const file = files[col];           // col: 0..7 -> a..h
-    const rank = 8 - row;              // row: 0 (top) -> rank 8
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const file = files[col]; // col: 0..7 -> a..h
+    const rank = 8 - row; // row: 0 (top) -> rank 8
     return `${file}${rank}`;
   }
 
@@ -80,53 +86,53 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
    * Handles game state for when a player joins the game
    */
   protected _join(player: Player): void {
-    //player already in game
+    // player already in game
     if (this.state.white === player.id || this.state.black === player.id) {
       throw new InvalidParametersError(PLAYER_ALREADY_IN_GAME_MESSAGE);
     }
 
-    //add white player
+    // add white player
     if (!this.state.white) {
       this.state = {
         ...this.state,
         status: 'WAITING_FOR_PLAYERS',
         white: player.id,
       };
-    
-    //add black player
+
+      // add black player
     } else if (!this.state.black) {
       this.state = {
         ...this.state,
         status: 'WAITING_FOR_PLAYERS',
         black: player.id,
       };
-    
-    //game already has two players
+
+      // game already has two players
     } else {
       throw new InvalidParametersError(GAME_FULL_MESSAGE);
     }
 
-    //both players present; waiting to start
+    // both players present; waiting to start
     if (this.state.white && this.state.black) {
       this.state.status = 'WAITING_TO_START';
     }
   }
 
-  /** 
+  /**
    * Handles game state for when the game starts
    */
   public startGame(player: Player): void {
-    //game not startable
+    // game not startable
     if (this.state.status !== 'WAITING_TO_START') {
       throw new InvalidParametersError(GAME_NOT_STARTABLE_MESSAGE);
     }
 
-    //player not in game
+    // player not in game
     if (this.state.white !== player.id && this.state.black !== player.id) {
       throw new InvalidParametersError(PLAYER_NOT_IN_GAME_MESSAGE);
     }
 
-    //mark player as ready
+    // mark player as ready
     if (this.state.white === player.id) {
       this.state.whiteReady = true;
     }
@@ -134,7 +140,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       this.state.blackReady = true;
     }
 
-    //if both players ready, start game
+    // if both players ready, start game
     this.state = {
       ...this.state,
       status: this.state.whiteReady && this.state.blackReady ? 'IN_PROGRESS' : 'WAITING_TO_START',
@@ -165,7 +171,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       throw new InvalidParametersError(MOVE_NOT_YOUR_TURN_MESSAGE);
     }
 
-    const move = request.move;
+    const { move } = request;
     this._validateMove(move);
     this._applyMove(move);
 
@@ -176,7 +182,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
   // Applies the given move to the internal chess engine state
   protected _applyMove(move: ChessMove): void {
     const from = this._toSquareFromRowCol(move.oldRow, move.oldCol);
-    const to   = this._toSquareFromRowCol(move.newRow, move.newCol);
+    const to = this._toSquareFromRowCol(move.newRow, move.newCol);
     const promotion = move.promotion
       ? (move.promotion.toLowerCase() as 'q' | 'r' | 'b' | 'n')
       : undefined;
@@ -189,14 +195,16 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
   }
 
   /**
-   * Validates that a proposed move is legal according to chess rules 
+   * Validates that a proposed move is legal according to chess rules
    */
   protected _validateMove(move: ChessMove): void {
     // --- basic bounds & trivial invalids ---
     const inBounds = (n: number) => n >= 0 && n < 8;
     if (
-      !inBounds(move.oldRow) || !inBounds(move.oldCol) ||
-      !inBounds(move.newRow) || !inBounds(move.newCol)
+      !inBounds(move.oldRow) ||
+      !inBounds(move.oldCol) ||
+      !inBounds(move.newRow) ||
+      !inBounds(move.newCol)
     ) {
       throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
     }
@@ -206,7 +214,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
 
     // --- convert to algebraic squares (row 0 = rank 8, col 0 = file a) ---
     const from = this._toSquareFromRowCol(move.oldRow, move.oldCol);
-    const to   = this._toSquareFromRowCol(move.newRow, move.newCol);
+    const to = this._toSquareFromRowCol(move.newRow, move.newCol);
 
     // --- turn ownership & piece presence/color checks ---
     const engineTurn = this._engine.turn(); // 'w' | 'b'
@@ -229,11 +237,11 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     const isPawn = pieceAtFrom.type === 'p';
     const toRank = parseInt(to[1], 10); // '1'..'8'
     const reachesLastRank =
-      (engineTurn === 'w' && toRank === 8) ||
-      (engineTurn === 'b' && toRank === 1);
+      (engineTurn === 'w' && toRank === 8) || (engineTurn === 'b' && toRank === 1);
 
-    let promotion: 'q' | 'r' | 'b' | 'n' | undefined =
-      move.promotion ? (move.promotion.toLowerCase() as 'q' | 'r' | 'b' | 'n') : undefined;
+    const promotion: 'q' | 'r' | 'b' | 'n' | undefined = move.promotion
+      ? (move.promotion.toLowerCase() as 'q' | 'r' | 'b' | 'n')
+      : undefined;
 
     // If promotion is provided, it must be a pawn move to last rank
     if (promotion && (!isPawn || !reachesLastRank)) {
@@ -312,8 +320,24 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
 
     // update game status based on current state
     switch (this.state.status) {
+      // 'WAITING_TO_START', 'WAITING_FOR_PLAYERS', and 'OVER' all have the same case behvaior
+      // cuz apPARENTLY THE LINTER DOESN'T LIKE FALLTHROUGHS
       case 'WAITING_TO_START':
+        this.state = {
+          ...this.state,
+          status: 'WAITING_FOR_PLAYERS',
+          whiteReady: false,
+          blackReady: false,
+        };
+        break;
       case 'WAITING_FOR_PLAYERS':
+        this.state = {
+          ...this.state,
+          status: 'WAITING_FOR_PLAYERS',
+          whiteReady: false,
+          blackReady: false,
+        };
+        break;
       // if the game is over, reset to wait for players to join
       case 'OVER':
         this.state = {
@@ -323,7 +347,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
           blackReady: false,
         };
         break;
-      //if the game was in progress, the other player wins
+      // if the game was in progress, the other player wins
       case 'IN_PROGRESS':
         this.state = {
           ...this.state,

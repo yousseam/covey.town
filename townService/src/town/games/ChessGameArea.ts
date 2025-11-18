@@ -37,7 +37,7 @@ export default class ChessGameArea extends GameArea<any> {
             this._occupants.find(eachPlayer => eachPlayer.id === black)?.userName || black;
           this._history.push({
             gameID,
-            //update players' scores
+            // update players' scores
             scores: {
               [whiteName]: updatedState.state.winner === white ? 1 : 0,
               [blackName]: updatedState.state.winner === black ? 1 : 0,
@@ -66,7 +66,7 @@ export default class ChessGameArea extends GameArea<any> {
     if (_command.type === 'GameMove') {
       // TODO: implement this
     }
-    
+
     if (_command.type === 'JoinGame') {
       let game = this._game;
       if (!game || game.state.status === 'OVER') {

@@ -22,9 +22,11 @@ export default class ChessGameArea extends GameArea<any> {
     return 'ChessArea';
   }
 
+  /**
+   * When the game finishes, record the outcome and update the area state
+   */
   private _stateUpdated(updatedState: GameInstance<ChessGameState>) {
     if (updatedState.state.status === 'OVER') {
-      // If we haven't yet recorded the outcome, do so now.
       const gameID = this._game?.id;
       if (gameID && !this._history.find(eachResult => eachResult.gameID === gameID)) {
         const { white, black } = updatedState.state;
@@ -35,6 +37,7 @@ export default class ChessGameArea extends GameArea<any> {
             this._occupants.find(eachPlayer => eachPlayer.id === black)?.userName || black;
           this._history.push({
             gameID,
+            //update players' scores
             scores: {
               [whiteName]: updatedState.state.winner === white ? 1 : 0,
               [blackName]: updatedState.state.winner === black ? 1 : 0,
@@ -55,9 +58,15 @@ export default class ChessGameArea extends GameArea<any> {
   ): InteractableCommandReturnType<CommandType> {
     // No chess backend yet — reject all commands for now.
 
+    /**
+     * Depending on the command type,
+     * call the appropriate method on the ChessGame instance
+     * and update the game state accordingly
+     */
     if (_command.type === 'GameMove') {
       // TODO: implement this
     }
+    
     if (_command.type === 'JoinGame') {
       let game = this._game;
       if (!game || game.state.status === 'OVER') {
@@ -69,6 +78,7 @@ export default class ChessGameArea extends GameArea<any> {
       this._stateUpdated(game.toModel());
       return { gameID: game.id } as InteractableCommandReturnType<CommandType>;
     }
+
     if (_command.type === 'LeaveGame') {
       const game = this._game;
       if (!game) {
@@ -81,6 +91,7 @@ export default class ChessGameArea extends GameArea<any> {
       this._stateUpdated(game.toModel());
       return undefined as InteractableCommandReturnType<CommandType>;
     }
+
     if (_command.type === 'StartGame') {
       const game = this._game;
       if (!game) {

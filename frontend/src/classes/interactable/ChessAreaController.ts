@@ -150,6 +150,10 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     });*/
   }
 
+  /**
+   * Return the PlayerController of the white player
+   * Return undefined if no white player
+   */
   get white(): PlayerController | undefined {
     const white = this._model.game?.state.white;
     if (white) {
@@ -158,6 +162,10 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     return undefined;
   }
 
+  /**
+   * Return the PlayerController of the black player
+   * Return undefined if no black player
+   */
   get black(): PlayerController | undefined {
     const black = this._model.game?.state.black;
     if (black) {
@@ -166,6 +174,10 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     return undefined;
   }
 
+  /**
+   * Return the PlayerController of the winner
+   * Return undefined if there is no winner yet
+   */
   get winner(): PlayerController | undefined {
     const winnerID: string | undefined = (this._model as any)?.game?.winner;
     return winnerID ? this.occupants.find(p => p.id === winnerID) : undefined;

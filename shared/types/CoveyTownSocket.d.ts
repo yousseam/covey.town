@@ -188,8 +188,10 @@ export interface ChessGameState extends WinnableGameState {
  */
 export interface ChessMove {
   gamePiece: ChessColor;
+  // Coordinates for the piece's initial position
   oldRow: ChessGridPosition;
   oldCol: ChessGridPosition;
+  // Coordinates for the piece's new position
   newRow: ChessGridPosition;
   newCol: ChessGridPosition;
   promotion?: 'Q' | 'R' | 'B' | 'N';

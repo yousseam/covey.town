@@ -76,55 +76,80 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
 
   /* ------------------------------------------------------ */
 
+  /**
+   * Handles game state for when a player joins the game
+   */
   protected _join(player: Player): void {
+    //player already in game
     if (this.state.white === player.id || this.state.black === player.id) {
       throw new InvalidParametersError(PLAYER_ALREADY_IN_GAME_MESSAGE);
     }
+
+    //add white player
     if (!this.state.white) {
       this.state = {
         ...this.state,
         status: 'WAITING_FOR_PLAYERS',
         white: player.id,
       };
+    
+    //add black player
     } else if (!this.state.black) {
       this.state = {
         ...this.state,
         status: 'WAITING_FOR_PLAYERS',
         black: player.id,
       };
+    
+    //game already has two players
     } else {
       throw new InvalidParametersError(GAME_FULL_MESSAGE);
     }
+
+    //both players present; waiting to start
     if (this.state.white && this.state.black) {
       this.state.status = 'WAITING_TO_START';
     }
   }
 
+  /** 
+   * Handles game state for when the game starts
+   */
   public startGame(player: Player): void {
+    //game not startable
     if (this.state.status !== 'WAITING_TO_START') {
       throw new InvalidParametersError(GAME_NOT_STARTABLE_MESSAGE);
     }
+
+    //player not in game
     if (this.state.white !== player.id && this.state.black !== player.id) {
       throw new InvalidParametersError(PLAYER_NOT_IN_GAME_MESSAGE);
     }
+
+    //mark player as ready
     if (this.state.white === player.id) {
       this.state.whiteReady = true;
     }
     if (this.state.black === player.id) {
       this.state.blackReady = true;
     }
+
+    //if both players ready, start game
     this.state = {
       ...this.state,
       status: this.state.whiteReady && this.state.blackReady ? 'IN_PROGRESS' : 'WAITING_TO_START',
     };
-
-    if (!!(this.state.whiteReady && this.state.blackReady)) {
+    // and initialize board and game state
+    if (this.state.whiteReady && this.state.blackReady) {
       this._engine = new Chess(); // reset to initial board
       this.state.moves = [];
       this.state.firstPlayer = 'White';
     }
   }
 
+  /**
+   * When a move is made, this method checks that it is valid and applies it to the game state
+   */
   public applyMove(request: GameMove<ChessMove>): void {
     if (this.state.status !== 'IN_PROGRESS') {
       throw new InvalidParametersError(GAME_NOT_IN_PROGRESS_MESSAGE);
@@ -148,6 +173,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     this._checkForGameEnding();
   }
 
+  // Applies the given move to the internal chess engine state
   protected _applyMove(move: ChessMove): void {
     const from = this._toSquareFromRowCol(move.oldRow, move.oldCol);
     const to   = this._toSquareFromRowCol(move.newRow, move.newCol);
@@ -162,6 +188,9 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     }
   }
 
+  /**
+   * Validates that a proposed move is legal according to chess rules 
+   */
   protected _validateMove(move: ChessMove): void {
     // --- basic bounds & trivial invalids ---
     const inBounds = (n: number) => n >= 0 && n < 8;
@@ -225,7 +254,9 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     }
   }
 
-
+  /**
+   * Checks for game ending conditions (checkmate, stalemate, draw) and updates state accordingly
+   */
   private _checkForGameEnding(): void {
     if (this._engine.inCheckmate()) {
       this.state = {
@@ -255,7 +286,11 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     }
   }
 
+  /**
+   * Handles game state for when a player leaves the game
+   */
   protected _leave(player: Player): void {
+    // remove the player from the game state
     const removePlayer = (playerID: string): Color => {
       if (this.state.white === playerID) {
         this.state = {
@@ -274,9 +309,12 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       throw new InvalidParametersError(PLAYER_NOT_IN_GAME_MESSAGE);
     };
     const color = removePlayer(player.id);
+
+    // update game status based on current state
     switch (this.state.status) {
       case 'WAITING_TO_START':
       case 'WAITING_FOR_PLAYERS':
+      // if the game is over, reset to wait for players to join
       case 'OVER':
         this.state = {
           ...this.state,
@@ -285,6 +323,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
           blackReady: false,
         };
         break;
+      //if the game was in progress, the other player wins
       case 'IN_PROGRESS':
         this.state = {
           ...this.state,

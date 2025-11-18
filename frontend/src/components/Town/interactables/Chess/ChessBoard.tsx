@@ -42,10 +42,11 @@ const StyledChessSquare = chakra(Button, {
     width: `${CELL_SIZE}px`,
     userSelect: 'none',
     _disabled: {
-      opacity: "90%"
+      opacity: '90%'
     }
   },
 });
+
 /**
  * A component that will render the Chess board, styled
  */
@@ -61,7 +62,7 @@ const StyledChessBoard = chakra(Container, {
 
 const getPieceStyle = (piece: ChessCell) => {
   if (!piece) return {};
-  const { x, y } = spriteMap[piece];
+  const { x, y } = spriteMap[piece as PieceKey];
   const scale = CELL_SIZE / SPRITE_SIZE;
   const sheetWidth = 6 * SPRITE_SIZE * scale; // 6 sprites per row
 
@@ -76,27 +77,63 @@ const getPieceStyle = (piece: ChessCell) => {
 /**
  * A component that renders the Chess board
  *
- * Renders an 8x8 static chessboard with sprites.
+ * Renders an 8x8 chessboard with sprites.
  * Includes rank (1–8) and file (A–H) labels.
- * White is at the bottom. No game logic yet — purely visual.
+ * White is at the bottom.
+ * Uses backend 'makeMove'
  */
-
 export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.Element {
   const [board, setBoard] = useState<ChessCell[][]>(gameAreaController.board);
   const [isOurTurn, setIsOurTurn] = useState(gameAreaController.isOurTurn);
   const toast = useToast();
+  const [selected, setSelected] = useState<{ row: number; col: number } | null>(null);
+  const [pendingPromotion, setPendingPromotion] = useState<{
+    oldRow: ChessGridPosition;
+    oldCol: ChessGridPosition;
+    newRow: ChessGridPosition;
+    newCol: ChessGridPosition;
+  } | null>(null);
+
   useEffect(() => {
-    gameAreaController.addListener('turnChanged', setIsOurTurn);
-    gameAreaController.addListener('boardChanged', setBoard);
+    const handleTurnChanged = (turn: boolean) => setIsOurTurn(turn);
+    const handleBoardChanged = (newBoard: ChessCell[][]) => setBoard(newBoard);
+
+    gameAreaController.addListener('turnChanged', handleTurnChanged);
+    gameAreaController.addListener('boardChanged', handleBoardChanged);
+
     return () => {
-      gameAreaController.removeListener('boardChanged', setBoard);
-      gameAreaController.removeListener('turnChanged', setIsOurTurn);
+      gameAreaController.removeListener('boardChanged', handleBoardChanged);
+      gameAreaController.removeListener('turnChanged', handleTurnChanged);
     };
   }, [gameAreaController]);
 
-  const [selected, setSelected] = useState<{ row: number; col: number } | null>(null);
+  const isPawnPromotionSquare = (piece: ChessCell, targetRow: number): boolean => {
+    if (!piece) return false;
+    if (piece === 'P') {
+      // White pawn promotes when reaching top row
+      return targetRow === 0;
+    }
+    if (piece === 'p') {
+      // Black pawn promotes when reaching bottom row
+      return targetRow === 7;
+    }
+    return false;
+  };
 
   const handleClick = async (row: number, col: number) => {
+    if (!isOurTurn) {
+      toast({
+        title: 'Not your turn',
+        status: 'info',
+      });
+      return;
+    }
+
+    if (pendingPromotion) {
+      // While promotion UI is open, ignore clicks on the board
+      return;
+    }
+
     const piece = board[row][col];
 
     if (selected) {
@@ -109,12 +146,17 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
         const oldCol = selected.col as ChessGridPosition;
         const newRow = row as ChessGridPosition;
         const newCol = col as ChessGridPosition;
+        const movingPiece = board[selected.row][selected.col];
         setSelected(null);
-        //await gameAreaController.makeMove(oldRow, oldCol, newRow, newCol);
-        // NOTE: temporary fake visual move, use makeMove instead when it is implemented
-        board[newRow][newCol] = board[oldRow][oldCol];
-        board[oldRow][oldCol] = undefined;
-        setBoard(board);
+
+        // If this is a pawn move to promotion rank, show promotion UI instead of sending move immediately
+        if (isPawnPromotionSquare(movingPiece, newRow)) {
+          setPendingPromotion({ oldRow, oldCol, newRow, newCol });
+          return;
+        }
+
+        // Normal move
+        await gameAreaController.makeMove(oldRow, oldCol, newRow, newCol);
       } catch (e) {
         toast({
           title: 'Error making move',
@@ -127,57 +169,109 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
     }
   };
 
+  const handlePromotionChoice = async (promotion: 'Q' | 'R' | 'B' | 'N') => {
+    if (!pendingPromotion) {
+      return;
+    }
+    try {
+      const { oldRow, oldCol, newRow, newCol } = pendingPromotion;
+      setPendingPromotion(null);
+      await gameAreaController.makeMove(oldRow, oldCol, newRow, newCol, promotion);
+    } catch (e) {
+      setPendingPromotion(null);
+      toast({
+        title: 'Error promoting pawn',
+        description: (e as Error).toString(),
+        status: 'error',
+      });
+    }
+  };
+
+  const disableBoard = !isOurTurn || !!pendingPromotion;
+
   return (
-    <StyledChessBoard aria-label='Chess Board'>
-      {/* Main board with vertical rank labels */}
-      {RANKS.map((rank, rIndex) => (
-        <Flex key={rank}>
-          {/* Rank numbers along the left side */}
-          <Box w='18px' display='flex' alignItems='center' justifyContent='center'>
-            <Text fontSize='sm' color='gray.700'>
-              {rank}
-            </Text>
-          </Box>
+    <>
+      <StyledChessBoard aria-label='Chess Board'>
+        {/* Main board with vertical rank labels */}
+        {RANKS.map((rank, rIndex) => (
+          <Flex key={rank}>
+            {/* Rank numbers along the left side */}
+            <Box w='18px' display='flex' alignItems='center' justifyContent='center'>
+              <Text fontSize='sm' color='gray.700'>
+                {rank}
+              </Text>
+            </Box>
 
-          {/* Row of chess squares */}
-          {FILES.map((file, fIndex) => {
-            const piece = board[rIndex][fIndex] as ChessCell;
-            const isDark = (rIndex + fIndex) % 2 === 1;
+            {/* Row of chess squares */}
+            {FILES.map((file, fIndex) => {
+              const piece = board[rIndex]?.[fIndex] as ChessCell;
+              const isDark = (rIndex + fIndex) % 2 === 1;
 
-            const borderStyles = {
-              borderRight: '1px solid black',
-              borderBottom: '1px solid black',
-              ...(rIndex === 0 && { borderTop: '1px solid black' }),
-              ...(fIndex === 0 && { borderLeft: '1px solid black' }),
-            };
+              const borderStyles = {
+                borderRight: '1px solid black',
+                borderBottom: '1px solid black',
+                ...(rIndex === 0 && { borderTop: '1px solid black' }),
+                ...(fIndex === 0 && { borderLeft: '1px solid black' }),
+              };
 
-            const isSelected = selected?.row === rIndex && selected?.col === fIndex;
+              const isSelected = selected?.row === rIndex && selected?.col === fIndex;
 
-            return (
-              <StyledChessSquare
-                key={`${rank}${file}`}
-                bg={isSelected ? (isDark ? '#464' : '#cfc') : isDark ? 'gray.600' : 'white'}
-                {...getPieceStyle(piece)}
-                {...borderStyles}
-                onClick={async () => handleClick(rIndex, fIndex)}
-                aria-label={`Cell ${rank}${file}`}
-                colorScheme='none'
-                disabled={false} /*TODO: change condition to !isOurTurn when alternating turns are implemented*/
-              />
-            );
-          })}
-        </Flex>
-      ))}
-
-      {/* File (A–H) labels below the board */}
-      <Flex mt={1}>
-        <Box w='18px' /> {/* offset for rank numbers */}
-        {FILES.map(letter => (
-          <Text key={letter} w={`${CELL_SIZE}px`} textAlign='center' fontSize='sm'>
-            {letter}
-          </Text>
+              return (
+                <StyledChessSquare
+                  key={`${rank}${file}`}
+                  bg={isSelected ? (isDark ? '#464' : '#cfc') : isDark ? 'gray.600' : 'white'}
+                  {...getPieceStyle(piece)}
+                  {...borderStyles}
+                  onClick={async () => handleClick(rIndex, fIndex)}
+                  aria-label={`Cell ${rank}${file}`}
+                  colorScheme='none'
+                  disabled={disableBoard}
+                />
+              );
+            })}
+          </Flex>
         ))}
-      </Flex>
-    </StyledChessBoard>
+
+        {/* File (A–H) labels below the board */}
+        <Flex mt={1}>
+          <Box w='18px' /> {/* offset for rank numbers */}
+          {FILES.map(letter => (
+            <Text key={letter} w={`${CELL_SIZE}px`} textAlign='center' fontSize='sm'>
+              {letter}
+            </Text>
+          ))}
+        </Flex>
+      </StyledChessBoard>
+
+      {/* Basic inline promotion UI (no new imports) */}
+      {pendingPromotion && (
+        <Flex mt={2} alignItems='center'>
+          <Text mr={2}>Promote pawn to:</Text>
+          <Button
+            size='sm'
+            mr={1}
+            onClick={() => handlePromotionChoice('Q')}>
+            Queen
+          </Button>
+          <Button
+            size='sm'
+            mr={1}
+            onClick={() => handlePromotionChoice('R')}>
+            Rook
+          </Button>
+          <Button
+            size='sm'
+            mr={1}
+            onClick={() => handlePromotionChoice('B')}>
+            Bishop
+          </Button>
+          <Button
+            size='sm'
+            onClick={() => handlePromotionChoice('N')}>
+            Knight
+          </Button>
+        </Flex>
+      )}
+    </>
   );
 }

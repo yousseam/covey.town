@@ -11,13 +11,20 @@ import {
   InteractableCommand,
   InteractableCommandReturnType,
   InteractableType,
+  ChessMove,
+  GameMove,
 } from '../../types/CoveyTownSocket';
 import ChessGame from './ChessGame';
 import GameArea from './GameArea';
 
-/* Once the backend logic is ready <any> will be replaced by 
-   <ChessGame> */
-export default class ChessGameArea extends GameArea<any> {
+/**
+ * ChessGameArea is the server-side wrapper around a ChessGame.
+ *
+ *  Creates a new ChessGame when players join.
+ *  Routes commands from clients (JoinGame, LeaveGame, StartGame, GameMove) to the appropriate methods on ChessGame.
+ *  Updates the stored game model and game history when the game ends.
+ */
+export default class ChessGameArea extends GameArea<ChessGame> {
   protected getType(): InteractableType {
     return 'ChessArea';
   }
@@ -47,16 +54,38 @@ export default class ChessGameArea extends GameArea<any> {
     this._emitAreaChanged();
   }
 
-  /* Minimal stub: satisfy abstract method so the backend can boot. 
-    For now our handleCommand function throws an error for any interaction */
+  /**
+   * Handle all commands directed at this ChessArea.
+   *
+   * Supported commands:
+   *  - JoinGame: player joins the current game (or starts a new one)
+   *  - LeaveGame: player leaves the current game
+   *  - StartGame: marks player ready; when both ready, the game starts
+   *  - GameMove: applies a ChessMove via ChessGame.applyMove
+   */
   public handleCommand<CommandType extends InteractableCommand>(
     _command: CommandType,
     _player: Player,
   ): InteractableCommandReturnType<CommandType> {
-    // No chess backend yet — reject all commands for now.
-
     if (_command.type === 'GameMove') {
-      // TODO: implement this
+      const game = this._game;
+      if (!game) {
+        throw new InvalidParametersError(GAME_NOT_IN_PROGRESS_MESSAGE);
+      }
+      if (game.id !== _command.gameID) {
+        throw new InvalidParametersError(GAME_ID_MISSMATCH_MESSAGE);
+      }
+
+      // Build the GameMove<ChessMove> wrapper expected by ChessGame.applyMove
+      const moveCommand: GameMove<ChessMove> = {
+        playerID: _player.id,
+        gameID: _command.gameID,
+        move: _command.move as ChessMove,
+      };
+
+      game.applyMove(moveCommand);
+      this._stateUpdated(game.toModel());
+      return undefined as InteractableCommandReturnType<CommandType>;
     }
     if (_command.type === 'JoinGame') {
       let game = this._game;
@@ -74,7 +103,7 @@ export default class ChessGameArea extends GameArea<any> {
       if (!game) {
         throw new InvalidParametersError(GAME_NOT_IN_PROGRESS_MESSAGE);
       }
-      if (this._game?.id !== _command.gameID) {
+      if (game.id !== _command.gameID) {
         throw new InvalidParametersError(GAME_ID_MISSMATCH_MESSAGE);
       }
       game.leave(_player);
@@ -86,7 +115,7 @@ export default class ChessGameArea extends GameArea<any> {
       if (!game) {
         throw new InvalidParametersError(GAME_NOT_IN_PROGRESS_MESSAGE);
       }
-      if (this._game?.id !== _command.gameID) {
+      if (game.id !== _command.gameID) {
         throw new InvalidParametersError(GAME_ID_MISSMATCH_MESSAGE);
       }
       game.startGame(_player);
@@ -97,7 +126,3 @@ export default class ChessGameArea extends GameArea<any> {
     throw new InvalidParametersError(INVALID_COMMAND_MESSAGE);
   }
 }
-/* This file will have to be expanded upon it serves as a temporary placeholder
-   so frontend tasks can be completed. The file defines the ChessGameArea class and
-   allows the backend to recognize and load 'Chess' areas without crashing, despite
-   our full backend logic being incomplete */

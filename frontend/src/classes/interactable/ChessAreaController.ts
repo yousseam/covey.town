@@ -30,6 +30,7 @@ export type ChessCell =
 export type ChessEvents = GameEventTypes & {
   boardChanged: (board: ChessCell[][]) => void;
   turnChanged: (isOurTurn: boolean) => void;
+  isNotWhite: (isNotWhite: boolean) => void;
   // TODO: implement this
 };
 
@@ -103,6 +104,15 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   protected _updateFrom(newModel: GameArea<any>): void {
     // TODO: implement this
     super._updateFrom(newModel);
+
+    // Emit isNotWhite event so ChessBoard can update board orientation while the board is already open
+    const isNotWhite = this.isNotWhite;
+    this.emit('isNotWhite', isNotWhite);
+    /** (if we ever implement functions in this file for joining and leaving game,
+    * put these lines for emitting isNotWhite in those functions instead of here
+    * so that isNotWhite is only emitted when a player joins/leaves the game
+    * and not every time the game state updates in any way)
+    */
   }
 
   /**
@@ -164,6 +174,16 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
       return this.occupants.find(eachOccupant => eachOccupant.id === black);
     }
     return undefined;
+  }
+
+  /**
+   * Returns true if white is in the game, but that player is not this player
+   * Used for ChessBoard.tsx so that if a white player has already joined,
+   * and this player has yet to join or has joined as the black player,
+   * then flip the board 180 degrees
+   */
+  get isNotWhite(): boolean { //TODO: change name to isNotWhite
+    return !!this.white && this.white?.id !== this._townController.ourPlayer.id;
   }
 
   get winner(): PlayerController | undefined {

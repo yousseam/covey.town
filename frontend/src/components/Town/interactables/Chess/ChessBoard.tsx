@@ -111,7 +111,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
     return () => {
       gameAreaController.removeListener('boardChanged', handleBoardChanged);
       gameAreaController.removeListener('turnChanged', handleTurnChanged);
-      gameAreaController.removeListener('isNotWhite', setIsOurTurn);
+      gameAreaController.removeListener('isNotWhite', setisNotWhite);
     };
   }, [gameAreaController]);
 

@@ -4,7 +4,6 @@ import ChessAreaController, {
   ChessCell,
 } from '../../../../classes/interactable/ChessAreaController';
 import { ChessGridPosition } from '../../../../types/CoveyTownSocket';
-import { FILE } from 'dns';
 
 export type ChessGameProps = {
   gameAreaController: ChessAreaController;

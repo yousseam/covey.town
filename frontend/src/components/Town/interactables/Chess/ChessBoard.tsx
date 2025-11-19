@@ -92,8 +92,8 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
   const [isNotWhite, setisNotWhite] = useState(gameAreaController.isNotWhite); // used for flipping the board 180 degrees for black player
   const toast = useToast();
 
-  let FILES = isNotWhite ? [...FILES_OG].reverse() : FILES_OG;
-  let RANKS = isNotWhite ? [...RANKS_OG].reverse() : RANKS_OG;
+  const files = isNotWhite ? [...FILES_OG].reverse() : FILES_OG;
+  const ranks = isNotWhite ? [...RANKS_OG].reverse() : RANKS_OG;
 
   const [selected, setSelected] = useState<{ row: number; col: number } | null>(null);
   const [pendingPromotion, setPendingPromotion] = useState<{
@@ -204,7 +204,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
     <>
       <StyledChessBoard aria-label='Chess Board'>
         {/* Main board with vertical rank labels */}
-        {RANKS.map((rank, rIndex) => {
+        {ranks.map((rank, rIndex) => {
           const row = isNotWhite ? 7 - rIndex : rIndex;
           return (
             <Flex key={rank}>
@@ -216,7 +216,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
               </Box>
 
               {/* Row of chess squares */}
-              {FILES.map((file, fIndex) => {
+              {files.map((file, fIndex) => {
                 const col = isNotWhite ? 7 - fIndex : fIndex;
                 const piece = board[row]?.[col] as ChessCell;
                 const isDark = (row + col) % 2 === 1;
@@ -250,7 +250,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
         {/* File (A–H) labels below the board */}
         <Flex mt={1}>
           <Box w='18px' /> {/* offset for rank numbers */}
-          {FILES.map(letter => (
+          {files.map(letter => (
             <Text key={letter} w={`${CELL_SIZE}px`} textAlign='center' fontSize='sm'>
               {letter}
             </Text>

@@ -85,9 +85,7 @@ describe('ChessAreaController (placeholder)', () => {
 
     it('throws NO_GAME_IN_PROGRESS_ERROR for makeMove()', async () => {
       const controller = createController(false);
-      await expect(
-        controller.makeMove(0, 0, 1, 0),
-      ).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
+      await expect(controller.makeMove(0, 0, 1, 0)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
     });
   });
 

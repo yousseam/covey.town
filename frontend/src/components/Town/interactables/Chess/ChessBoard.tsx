@@ -44,6 +44,9 @@ const StyledChessSquare = chakra(Button, {
     userSelect: 'none',
     _disabled: {
       opacity: '90%'
+    },
+    _focus: {
+      boxShadow: 'none'
     }
   },
 });

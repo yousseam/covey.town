@@ -5,7 +5,9 @@ import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { ChakraProvider } from '@chakra-ui/react';
 import ChessBoard from './ChessBoard';
-import ChessAreaController, { ChessCell } from '../../../../classes/interactable/ChessAreaController';
+import ChessAreaController, {
+  ChessCell,
+} from '../../../../classes/interactable/ChessAreaController';
 import TownController from '../../../../classes/TownController';
 import PlayerController from '../../../../classes/PlayerController';
 import { ChessGameState, GameArea } from '../../../../types/CoveyTownSocket';
@@ -21,7 +23,9 @@ jest.mock('@chakra-ui/react', () => {
 // Mock Chess Controller
 class MockChessAreaController extends ChessAreaController {
   mockBoard: ChessCell[][] = [];
+
   mockIsOurTurn = false;
+
   makeMove = jest.fn();
 
   constructor() {
@@ -85,10 +89,12 @@ describe('ChessBoard', () => {
     expect(cells).toHaveLength(64);
 
     // verify rank/file labels
-    ['A','B','C','D','E','F','G','H'].forEach(letter =>
-      expect(screen.getByText(letter)).toBeInTheDocument());
-    [1,2,3,4,5,6,7,8].forEach(num =>
-      expect(screen.getByText(num.toString())).toBeInTheDocument());
+    ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter =>
+      expect(screen.getByText(letter)).toBeInTheDocument(),
+    );
+    [1, 2, 3, 4, 5, 6, 7, 8].forEach(num =>
+      expect(screen.getByText(num.toString())).toBeInTheDocument(),
+    );
 
     if (clickable) {
       const from = screen.getByLabelText('Cell 2A');

@@ -262,27 +262,16 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
       {pendingPromotion && (
         <Flex mt={2} alignItems='center'>
           <Text mr={2}>Promote pawn to:</Text>
-          <Button
-            size='sm'
-            mr={1}
-            onClick={() => handlePromotionChoice('Q')}>
+          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('Q')}>
             Queen
           </Button>
-          <Button
-            size='sm'
-            mr={1}
-            onClick={() => handlePromotionChoice('R')}>
+          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('R')}>
             Rook
           </Button>
-          <Button
-            size='sm'
-            mr={1}
-            onClick={() => handlePromotionChoice('B')}>
+          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('B')}>
             Bishop
           </Button>
-          <Button
-            size='sm'
-            onClick={() => handlePromotionChoice('N')}>
+          <Button size='sm' onClick={() => handlePromotionChoice('N')}>
             Knight
           </Button>
         </Flex>

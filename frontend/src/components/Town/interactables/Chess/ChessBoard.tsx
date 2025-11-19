@@ -40,6 +40,7 @@ const StyledChessSquare = chakra(Button, {
   baseStyle: {
     height: `${CELL_SIZE}px`,
     width: `${CELL_SIZE}px`,
+    borderRadius: '0',
     userSelect: 'none',
     _disabled: {
       opacity: '90%'

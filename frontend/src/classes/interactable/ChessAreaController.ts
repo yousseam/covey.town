@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ChessGameState,
   ChessGridPosition,
   ChessMove,
-  GameArea,
+  GameArea as ChessGameAreaModel,
   GameStatus,
+  ChessColor,
 } from '../../types/CoveyTownSocket';
 import PlayerController from '../PlayerController';
 import GameAreaController, {
@@ -35,9 +37,8 @@ export type ChessEvents = GameEventTypes & {
 };
 
 /**
- * Minimal placeholder controller for the Chess game area.
- * Lets players interact with the Chess area (pressing space) without crashing.
- * Full game logic (moves, turns, etc.) will be added later.
+ * Controller for a Chess game area on the client.
+ * Keeps a local board view, tracks whose turn it is, and sends
  */
 export default class ChessAreaController extends GameAreaController<ChessGameState, ChessEvents> {
   protected _board: ChessCell[][] = [
@@ -76,33 +77,46 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   }
 
   /**
-   * Returns true if the current player is in the game.
-   * For now, always false until player join logic exists.
+   * True if the current client player is one of the game players (white or black)
    */
   get isPlayer(): boolean {
-    // TODO: implement this
-    return false;
+    const state = this._model.game?.state;
+    if (!state) {
+      return false;
+    }
+    const ourID = this._townController.ourPlayer.id;
+    return state.white === ourID || state.black === ourID;
   }
 
   /**
-   * Returns the player whose turn it is — not yet implemented.
+   * Returns the PlayerController whose turn it currently is, or undefined if
+   * the game is not in progress.
    */
   get whoseTurn(): PlayerController | undefined {
-    // TODO: implement this
-    return undefined;
-  }
+    const game = this._model.game;
+    if (!game || game.state.status !== 'IN_PROGRESS') {
+      return undefined;
+    }
+    const movesSoFar = game.state.moves.length;
+    const first = game.state.firstPlayer;
 
-  public isActive(): boolean {
-    // TODO: implement this
-    return false;
+    // White moves on even
+    const whiteToMove = first === 'White' ? movesSoFar % 2 === 0 : movesSoFar % 2 === 1;
+    return whiteToMove ? this.white : this.black;
   }
 
   /**
-   * Called when backend sends an update.
-   * Currently does nothing but can later track board state.
+   * Returns true if this game is active for us (we are a player and the game is in progress)
    */
-  protected _updateFrom(newModel: GameArea<any>): void {
-    // TODO: implement this
+  public isActive(): boolean {
+    return this.isPlayer && this.status === 'IN_PROGRESS';
+  }
+
+  /**
+   * Called whenever the backend sends an updated GameArea model.
+   * We mirror the game state into a local board.
+   */
+  protected _updateFrom(newModel: ChessGameAreaModel<ChessGameState>): void {
     super._updateFrom(newModel);
 
     // Emit isNotWhite event so ChessBoard can update board orientation while the board is already open
@@ -113,51 +127,59 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     * so that isNotWhite is only emitted when a player joins/leaves the game
     * and not every time the game state updates in any way)
     */
-  }
 
-  /**
-   * Sends a request to the server to start the game.
-   *
-   * If the game is not in the WAITING_TO_START state, throws an error.
-   *
-   * @throws an error with message NO_GAME_STARTABLE if there is no game waiting to start
-   */
-  public async startGame(): Promise<void> {
-    const instanceID = this._instanceID;
-    if (!instanceID || this._model.game?.state.status !== 'WAITING_TO_START') {
-      throw new Error(NO_GAME_STARTABLE);
+    const game = newModel.game;
+    if (!game) {
+      // No game instance, reset board to initial position
+      this._board = [
+        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+        ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+        Array(8).fill(undefined),
+        Array(8).fill(undefined),
+        Array(8).fill(undefined),
+        Array(8).fill(undefined),
+        ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+      ];
+      this.emit('boardChanged', this._board);
+      this.emit('turnChanged', false);
+      return;
     }
-    await this._townController.sendInteractableCommand(this.id, {
-      gameID: instanceID,
-      type: 'StartGame',
-    });
-  }
 
-  /**
-   * Stub for making a chess move. Currently throws to show it’s not ready yet.
-   */
-  public async makeMove(
-    oldRow: ChessGridPosition,
-    oldCol: ChessGridPosition,
-    newRow: ChessGridPosition,
-    newCol: ChessGridPosition,
-  ) {
-    const instanceID = this._instanceID;
-    if (!instanceID || this._model.game?.state.status !== 'IN_PROGRESS') {
-      throw new Error(NO_GAME_IN_PROGRESS_ERROR);
+    // Start from a fresh initial board and replay all moves from state
+    const board: ChessCell[][] = [
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      Array(8).fill(undefined),
+      Array(8).fill(undefined),
+      Array(8).fill(undefined),
+      Array(8).fill(undefined),
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+    ];
+
+    for (const mv of game.state.moves) {
+      const { oldRow, oldCol, newRow, newCol, promotion, gamePiece } = mv;
+      const movingPiece = board[oldRow][oldCol];
+
+      // Clear source square
+      board[oldRow][oldCol] = undefined;
+
+      // Handle promotion
+      if (promotion && movingPiece && (movingPiece === 'P' || movingPiece === 'p')) {
+        const isWhite = gamePiece === 'White';
+        const promoLetter = promotion; // 'Q' | 'R' | 'B' | 'N'
+        const promoPiece = (isWhite ? promoLetter : promoLetter.toLowerCase()) as ChessCell;
+        board[newRow][newCol] = promoPiece;
+      } else {
+        // Normal move, just move the piece
+        board[newRow][newCol] = movingPiece;
+      }
     }
-    // TODO: gamePiece getter needs to be defined
-    /*await this._townController.sendInteractableCommand(this.id, {
-      type: 'GameMove',
-      gameID: instanceID,
-      move: {
-        oldRow,
-        oldCol,
-        newRow,
-        newCol,
-        gamePiece: this.gamePiece,
-      },
-    });*/
+
+    this._board = board;
+    this.emit('boardChanged', this._board);
+    this.emit('turnChanged', this.isOurTurn);
   }
 
   get white(): PlayerController | undefined {
@@ -187,7 +209,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   }
 
   get winner(): PlayerController | undefined {
-    const winnerID: string | undefined = (this._model as any)?.game?.winner;
+    const winnerID: string | undefined = this._model.game?.state.winner;
     return winnerID ? this.occupants.find(p => p.id === winnerID) : undefined;
   }
 
@@ -205,22 +227,66 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     return this.whoseTurn?.id === this._townController.ourPlayer.id;
   }
 
-  /*
-  get gamePiece(): FENChar? {
-    // TODO: implement this
+  /**
+   * Sends a request to the server to start the game.
+   *
+   * If the game is not in the WAITING_TO_START state, throws an error.
+   *
+   * @throws an error with message NO_GAME_STARTABLE if there is no game waiting to start
+   */
+  public async startGame(): Promise<void> {
+    const instanceID = this._instanceID;
+    if (!instanceID || this._model.game?.state.status !== 'WAITING_TO_START') {
+      throw new Error(NO_GAME_STARTABLE);
+    }
+    await this._townController.sendInteractableCommand(this.id, {
+      gameID: instanceID,
+      type: 'StartGame',
+    });
   }
 
-  isEmpty(): boolean {
-    // TODO: implement this
-  }
-  
-  public isActive(): boolean {
-    // TODO: implement this
-  }
+  /**
+   * Sends a ChessMove to the backend.
+   */
+  public async makeMove(
+    oldRow: ChessGridPosition,
+    oldCol: ChessGridPosition,
+    newRow: ChessGridPosition,
+    newCol: ChessGridPosition,
+    promotion?: 'Q' | 'R' | 'B' | 'N',
+  ): Promise<void> {
+    const instanceID = this._instanceID;
+    const game = this._model.game;
 
-  protected _updateFrom(newModel: GameArea<ChessGameState>): void {
-    // TODO: implement this
+    if (!instanceID || !game || game.state.status !== 'IN_PROGRESS') {
+      throw new Error(NO_GAME_IN_PROGRESS_ERROR);
+    }
+
+    const state = game.state;
+    const ourID = this._townController.ourPlayer.id;
+
+    if (ourID !== state.white && ourID !== state.black) {
+      throw new Error(PLAYER_NOT_IN_GAME_ERROR);
+    }
+
+    const whose = this.whoseTurn;
+    if (!whose || whose.id !== ourID) {
+      throw new Error(NO_GAME_IN_PROGRESS_ERROR);
+    }
+
+    const gamePiece: ChessColor = whose === this.white ? 'White' : 'Black';
+
+    await this._townController.sendInteractableCommand(this.id, {
+      type: 'GameMove',
+      gameID: instanceID,
+      move: {
+        oldRow,
+        oldCol,
+        newRow,
+        newCol,
+        gamePiece,
+        ...(promotion ? { promotion } : {}),
+      } as ChessMove,
+    });
   }
-  
-  */
 }

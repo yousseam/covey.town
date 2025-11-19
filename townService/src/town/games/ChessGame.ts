@@ -1,3 +1,4 @@
+import { Chess } from 'chess.ts';
 import InvalidParametersError, {
   BOARD_POSITION_NOT_VALID_MESSAGE,
   GAME_FULL_MESSAGE,
@@ -8,19 +9,24 @@ import InvalidParametersError, {
   PLAYER_NOT_IN_GAME_MESSAGE,
 } from '../../lib/InvalidParametersError';
 import Player from '../../lib/Player';
-import { ChessGameState, ChessMove, GameMove, PlayerID, ChessColor } from '../../types/CoveyTownSocket';
+import {
+  ChessGameState,
+  ChessMove,
+  GameMove,
+  PlayerID,
+  ChessColor,
+} from '../../types/CoveyTownSocket';
 import { Color, Coords, FENChar } from './chess-game-logic/models';
 import Game from './Game';
-import { Chess } from 'chess.ts';
 
 /**
  * A ChessGame is a Game that implements the rules of Chess.
  */
 
 export default class ChessGame extends Game<ChessGameState, ChessMove> {
-    private _engine: Chess;
+  private _engine: Chess;
 
-    public constructor(priorGame?: ChessGame) {
+  public constructor(priorGame?: ChessGame) {
     super({
       moves: [],
       status: 'WAITING_FOR_PLAYERS',
@@ -29,23 +35,23 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     this._engine = new Chess();
   }
 
-  /* ------------------ Helper Functions ------------------ */
-  /** Convert grid row/col (0..7, top-left origin) to 'a1'..'h8'. */
+  /* ------------Helper Functions------------*/
+  /* Convert grid row/col (0..7, top-left origin) to 'a1'..'h8'. */
   private _toSquareFromRowCol(row: number, col: number): string {
-    const files = ['a','b','c','d','e','f','g','h'];
-    const file = files[col];           // col: 0..7 -> a..h
-    const rank = 8 - row;              // row: 0 (top) -> rank 8
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const file = files[col]; // col: 0..7 -> a..h
+    const rank = 8 - row; // row: 0 (top) -> rank 8
     return `${file}${rank}`;
   }
 
-  /** Convert algebraic square like 'e4' to internal coordinates {x, y}. */
+  /* Convert algebraic square like 'e4' to internal coordinates {x, y}. */
   private _fromSquare(square: string): Coords {
     const file = square[0].charCodeAt(0) - 'a'.charCodeAt(0);
     const rank = parseInt(square[1], 10);
     return { x: file, y: 8 - rank };
   }
 
-  /** Translate single-letter promotion notation to our FENChar type. */
+  /* Translate single-letter promotion notation to our FENChar type. */
   private _promotionFenChar(letter: 'q' | 'r' | 'b' | 'n'): FENChar {
     const white = this._engine.turn() === 'w';
     switch (letter) {
@@ -68,13 +74,12 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     return turn === 'w' ? this.state.white : this.state.black;
   }
 
-  /** Determine the winner when checkmate occurs. */
+  /* Determine the winner when checkmate occurs. */
   private _winnerOnCheckmate(): PlayerID | undefined {
     const loser = this._engine.turn(); // side to move after mate
     return loser === 'w' ? this.state.black : this.state.white;
   }
-
-  /* ------------------------------------------------------ */
+  /*------------------------------------------------*/
 
   protected _join(player: Player): void {
     if (this.state.white === player.id || this.state.black === player.id) {
@@ -118,7 +123,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       status: this.state.whiteReady && this.state.blackReady ? 'IN_PROGRESS' : 'WAITING_TO_START',
     };
 
-    if (!!(this.state.whiteReady && this.state.blackReady)) {
+    if (this.state.whiteReady && this.state.blackReady) {
       this._engine = new Chess(); // reset to initial board
       this.state.moves = [];
       this.state.firstPlayer = 'White';
@@ -140,17 +145,17 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       throw new InvalidParametersError(MOVE_NOT_YOUR_TURN_MESSAGE);
     }
 
-    const move = request.move;
+    const { move } = request;
     this._validateMove(move);
     this._applyMove(move);
 
-    this.state.moves = [...this.state.moves, request.move];
+    this.state.moves = [...this.state.moves, move];
     this._checkForGameEnding();
   }
 
   protected _applyMove(move: ChessMove): void {
     const from = this._toSquareFromRowCol(move.oldRow, move.oldCol);
-    const to   = this._toSquareFromRowCol(move.newRow, move.newCol);
+    const to = this._toSquareFromRowCol(move.newRow, move.newCol);
     const promotion = move.promotion
       ? (move.promotion.toLowerCase() as 'q' | 'r' | 'b' | 'n')
       : undefined;
@@ -163,11 +168,13 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
   }
 
   protected _validateMove(move: ChessMove): void {
-    // --- basic bounds & trivial invalids ---
+    // basic bounds & trivial invalids
     const inBounds = (n: number) => n >= 0 && n < 8;
     if (
-      !inBounds(move.oldRow) || !inBounds(move.oldCol) ||
-      !inBounds(move.newRow) || !inBounds(move.newCol)
+      !inBounds(move.oldRow) ||
+      !inBounds(move.oldCol) ||
+      !inBounds(move.newRow) ||
+      !inBounds(move.newCol)
     ) {
       throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
     }
@@ -175,11 +182,11 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
     }
 
-    // --- convert to algebraic squares (row 0 = rank 8, col 0 = file a) ---
+    // convert to algebraic squares (row 0 = rank 8, col 0 = file a)
     const from = this._toSquareFromRowCol(move.oldRow, move.oldCol);
-    const to   = this._toSquareFromRowCol(move.newRow, move.newCol);
+    const to = this._toSquareFromRowCol(move.newRow, move.newCol);
 
-    // --- turn ownership & piece presence/color checks ---
+    // turn ownership & piece presence/color checks
     const engineTurn = this._engine.turn(); // 'w' | 'b'
     const expectedColor: ChessColor = engineTurn === 'w' ? 'White' : 'Black';
     if (move.gamePiece !== expectedColor) {
@@ -196,35 +203,31 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       throw new InvalidParametersError(MOVE_NOT_YOUR_TURN_MESSAGE);
     }
 
-    // --- promotion sanity (only pawns may promote, only on last rank, letter must be QRBN) ---
+    // promotion sanity (only pawns may promote, only on last rank, letter must be QRBN)
     const isPawn = pieceAtFrom.type === 'p';
     const toRank = parseInt(to[1], 10); // '1'..'8'
     const reachesLastRank =
-      (engineTurn === 'w' && toRank === 8) ||
-      (engineTurn === 'b' && toRank === 1);
+      (engineTurn === 'w' && toRank === 8) || (engineTurn === 'b' && toRank === 1);
 
-    let promotion: 'q' | 'r' | 'b' | 'n' | undefined =
-      move.promotion ? (move.promotion.toLowerCase() as 'q' | 'r' | 'b' | 'n') : undefined;
+    const promotion: 'q' | 'r' | 'b' | 'n' | undefined = move.promotion
+      ? (move.promotion.toLowerCase() as 'q' | 'r' | 'b' | 'n')
+      : undefined;
 
-    // If promotion is provided, it must be a pawn move to last rank
     if (promotion && (!isPawn || !reachesLastRank)) {
       throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
     }
-    // If promotion is required (pawn reaches last rank) but not provided, you may:
-    // - throw to force the client to specify, OR
-    // - default to 'q'. Here we throw so UI can prompt.
     if (!promotion && isPawn && reachesLastRank) {
+      // Require frontend to specify promotion piece.
       throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
     }
 
-    // --- final legality check on a cloned engine so we don't mutate state ---
+    // final legality check on a cloned engine so we don't mutate state
     const test = new Chess(this._engine.fen());
     const ok = test.move({ from, to, promotion });
     if (!ok) {
       throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
     }
   }
-
 
   private _checkForGameEnding(): void {
     if (this._engine.inCheckmate()) {

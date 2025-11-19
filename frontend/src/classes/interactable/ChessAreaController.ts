@@ -123,10 +123,10 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     const isNotWhite = this.isNotWhite;
     this.emit('isNotWhite', isNotWhite);
     /** (if we ever implement functions in this file for joining and leaving game,
-    * put these lines for emitting isNotWhite in those functions instead of here
-    * so that isNotWhite is only emitted when a player joins/leaves the game
-    * and not every time the game state updates in any way)
-    */
+     * put these lines for emitting isNotWhite in those functions instead of here
+     * so that isNotWhite is only emitted when a player joins/leaves the game
+     * and not every time the game state updates in any way)
+     */
 
     const game = newModel.game;
     if (!game) {
@@ -182,6 +182,10 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     this.emit('turnChanged', this.isOurTurn);
   }
 
+  /**
+   * Return the PlayerController of the white player
+   * Return undefined if no white player
+   */
   get white(): PlayerController | undefined {
     const white = this._model.game?.state.white;
     if (white) {
@@ -190,6 +194,10 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     return undefined;
   }
 
+  /**
+   * Return the PlayerController of the black player
+   * Return undefined if no black player
+   */
   get black(): PlayerController | undefined {
     const black = this._model.game?.state.black;
     if (black) {
@@ -204,10 +212,14 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
    * and this player has yet to join or has joined as the black player,
    * then flip the board 180 degrees
    */
-  get isNotWhite(): boolean { //TODO: change name to isNotWhite
+  get isNotWhite(): boolean {
     return !!this.white && this.white?.id !== this._townController.ourPlayer.id;
   }
 
+  /**
+   * Return the PlayerController of the winner
+   * Return undefined if there is no winner yet
+   */
   get winner(): PlayerController | undefined {
     const winnerID: string | undefined = this._model.game?.state.winner;
     return winnerID ? this.occupants.find(p => p.id === winnerID) : undefined;

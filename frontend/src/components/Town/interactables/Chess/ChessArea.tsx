@@ -81,6 +81,9 @@ export default function ChessArea({
     };
   }, [townController, gameAreaController, toast]);
 
+  /**
+   * Called when the player clicks the "Join 2-player Game" button
+   */
   const handleJoinTwoPlayer = async () => {
     setJoiningGame(true);
     try {
@@ -95,6 +98,9 @@ export default function ChessArea({
     setJoiningGame(false);
   };
 
+  /**
+   * Called when the player clicks the "Start Game" button
+   */
   const handleStartGame = async () => {
     setJoiningGame(true);
     try {
@@ -109,6 +115,9 @@ export default function ChessArea({
     setJoiningGame(false);
   };
 
+  /**
+   * Called when the player clicks the "Join Game with Bot" button
+   */
   const handleJoinBot = () => {
     // Placeholder: not implemented yet
     toast({
@@ -119,7 +128,10 @@ export default function ChessArea({
   };
 
   let vsButton = <></>;
-  if (gameStatus === 'IN_PROGRESS') {
+  // 'vsButton' is either "Join 2-player Game" if player hasn't joined yet,
+  // "Start Game" if both players joined,
+  // or not displayed if game in progress
+  if (gameStatus == 'IN_PROGRESS') {
     vsButton = <></>;
   } else if (gameStatus === 'WAITING_TO_START') {
     vsButton = (

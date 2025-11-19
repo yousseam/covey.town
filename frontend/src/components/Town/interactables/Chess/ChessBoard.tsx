@@ -42,8 +42,8 @@ const StyledChessSquare = chakra(Button, {
     width: `${CELL_SIZE}px`,
     userSelect: 'none',
     _disabled: {
-      opacity: '90%'
-    }
+      opacity: '90%',
+    },
   },
 });
 
@@ -88,8 +88,8 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
   const [isNotWhite, setisNotWhite] = useState(gameAreaController.isNotWhite); // used for flipping the board 180 degrees for black player
   const toast = useToast();
 
-  let FILES = isNotWhite ? [...FILES_OG].reverse() : FILES_OG;
-  let RANKS = isNotWhite ? [...RANKS_OG].reverse() : RANKS_OG;
+  const files = isNotWhite ? [...FILES_OG].reverse() : FILES_OG;
+  const ranks = isNotWhite ? [...RANKS_OG].reverse() : RANKS_OG;
 
   const [selected, setSelected] = useState<{ row: number; col: number } | null>(null);
   const [pendingPromotion, setPendingPromotion] = useState<{
@@ -200,51 +200,55 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
     <>
       <StyledChessBoard aria-label='Chess Board'>
         {/* Main board with vertical rank labels */}
-        {RANKS.map((rank, rIndex) => (
-          rIndex = isNotWhite ? 7 - rIndex : rIndex,
-        <Flex key={rank}>
-            {/* Rank numbers along the left side */}
-            <Box w='18px' display='flex' alignItems='center' justifyContent='center'>
-              <Text fontSize='sm' color='gray.700'>
-                {rank}
-              </Text>
-            </Box>
+        {ranks.map(
+          (rank, rIndex) => (
+            (rIndex = isNotWhite ? 7 - rIndex : rIndex),
+            (
+              <Flex key={rank}>
+                {/* Rank numbers along the left side */}
+                <Box w='18px' display='flex' alignItems='center' justifyContent='center'>
+                  <Text fontSize='sm' color='gray.700'>
+                    {rank}
+                  </Text>
+                </Box>
 
-            {/* Row of chess squares */}
-            {FILES.map((file, fIndex) => {
-              fIndex = isNotWhite ? 7 - fIndex : fIndex;
-            const piece = board[rIndex]?.[fIndex] as ChessCell;
-              const isDark = (rIndex + fIndex) % 2 === 1;
+                {/* Row of chess squares */}
+                {files.map((file, fIndex) => {
+                  fIndex = isNotWhite ? 7 - fIndex : fIndex;
+                  const piece = board[rIndex]?.[fIndex] as ChessCell;
+                  const isDark = (rIndex + fIndex) % 2 === 1;
 
-              const borderStyles = {
-                borderRight: '1px solid black',
-                borderBottom: '1px solid black',
-                ...(rIndex === 0 && { borderTop: '1px solid black' }),
-                ...(fIndex === 0 && { borderLeft: '1px solid black' }),
-              };
+                  const borderStyles = {
+                    borderRight: '1px solid black',
+                    borderBottom: '1px solid black',
+                    ...(rIndex === 0 && { borderTop: '1px solid black' }),
+                    ...(fIndex === 0 && { borderLeft: '1px solid black' }),
+                  };
 
-              const isSelected = selected?.row === rIndex && selected?.col === fIndex;
+                  const isSelected = selected?.row === rIndex && selected?.col === fIndex;
 
-              return (
-                <StyledChessSquare
-                  key={`${rank}${file}`}
-                  bg={isSelected ? (isDark ? '#464' : '#cfc') : isDark ? 'gray.600' : 'white'}
-                  {...getPieceStyle(piece)}
-                  {...borderStyles}
-                  onClick={async () => handleClick(rIndex, fIndex)}
-                  aria-label={`Cell ${rank}${file}`}
-                  colorScheme='none'
-                  disabled={disableBoard}
-                />
-              );
-            })}
-          </Flex>
-        ))}
+                  return (
+                    <StyledChessSquare
+                      key={`${rank}${file}`}
+                      bg={isSelected ? (isDark ? '#464' : '#cfc') : isDark ? 'gray.600' : 'white'}
+                      {...getPieceStyle(piece)}
+                      {...borderStyles}
+                      onClick={async () => handleClick(rIndex, fIndex)}
+                      aria-label={`Cell ${rank}${file}`}
+                      colorScheme='none'
+                      disabled={disableBoard}
+                    />
+                  );
+                })}
+              </Flex>
+            )
+          ),
+        )}
 
         {/* File (A–H) labels below the board */}
         <Flex mt={1}>
           <Box w='18px' /> {/* offset for rank numbers */}
-          {FILES.map(letter => (
+          {files.map(letter => (
             <Text key={letter} w={`${CELL_SIZE}px`} textAlign='center' fontSize='sm'>
               {letter}
             </Text>
@@ -256,27 +260,16 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
       {pendingPromotion && (
         <Flex mt={2} alignItems='center'>
           <Text mr={2}>Promote pawn to:</Text>
-          <Button
-            size='sm'
-            mr={1}
-            onClick={() => handlePromotionChoice('Q')}>
+          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('Q')}>
             Queen
           </Button>
-          <Button
-            size='sm'
-            mr={1}
-            onClick={() => handlePromotionChoice('R')}>
+          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('R')}>
             Rook
           </Button>
-          <Button
-            size='sm'
-            mr={1}
-            onClick={() => handlePromotionChoice('B')}>
+          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('B')}>
             Bishop
           </Button>
-          <Button
-            size='sm'
-            onClick={() => handlePromotionChoice('N')}>
+          <Button size='sm' onClick={() => handlePromotionChoice('N')}>
             Knight
           </Button>
         </Flex>

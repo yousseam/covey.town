@@ -43,8 +43,11 @@ const StyledChessSquare = chakra(Button, {
     borderRadius: '0',
     userSelect: 'none',
     _disabled: {
-      opacity: '90%',
+      opacity: '90%'
     },
+    _focus: {
+      boxShadow: 'none'
+    }
   },
 });
 
@@ -201,50 +204,48 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
     <>
       <StyledChessBoard aria-label='Chess Board'>
         {/* Main board with vertical rank labels */}
-        {ranks.map(
-          (rank, rIndex) => (
-            (rIndex = isNotWhite ? 7 - rIndex : rIndex),
-            (
-              <Flex key={rank}>
-                {/* Rank numbers along the left side */}
-                <Box w='18px' display='flex' alignItems='center' justifyContent='center'>
-                  <Text fontSize='sm' color='gray.700'>
-                    {rank}
-                  </Text>
-                </Box>
+        {ranks.map((rank, rIndex) => {
+          const row = isNotWhite ? 7 - rIndex : rIndex;
+          return (
+            <Flex key={rank}>
+              {/* Rank numbers along the left side */}
+              <Box w='18px' display='flex' alignItems='center' justifyContent='center'>
+                <Text fontSize='sm' color='gray.700'>
+                  {rank}
+                </Text>
+              </Box>
 
-                {/* Row of chess squares */}
-                {files.map((file, fIndex) => {
-                  fIndex = isNotWhite ? 7 - fIndex : fIndex;
-                  const piece = board[rIndex]?.[fIndex] as ChessCell;
-                  const isDark = (rIndex + fIndex) % 2 === 1;
+              {/* Row of chess squares */}
+              {files.map((file, fIndex) => {
+                const col = isNotWhite ? 7 - fIndex : fIndex;
+                const piece = board[row]?.[col] as ChessCell;
+                const isDark = (row + col) % 2 === 1;
 
-                  const borderStyles = {
-                    borderRight: '1px solid black',
-                    borderBottom: '1px solid black',
-                    ...(rIndex === 0 && { borderTop: '1px solid black' }),
-                    ...(fIndex === 0 && { borderLeft: '1px solid black' }),
-                  };
+                const borderStyles = {
+                  borderRight: '1px solid black',
+                  borderBottom: '1px solid black',
+                  ...(rIndex === 0 && { borderTop: '1px solid black' }),
+                  ...(fIndex === 0 && { borderLeft: '1px solid black' }),
+                };
 
-                  const isSelected = selected?.row === rIndex && selected?.col === fIndex;
+                const isSelected = selected?.row === row && selected?.col === col;
 
-                  return (
-                    <StyledChessSquare
-                      key={`${rank}${file}`}
-                      bg={isSelected ? (isDark ? '#464' : '#cfc') : isDark ? 'gray.600' : 'white'}
-                      {...getPieceStyle(piece)}
-                      {...borderStyles}
-                      onClick={async () => handleClick(rIndex, fIndex)}
-                      aria-label={`Cell ${rank}${file}`}
-                      colorScheme='none'
-                      disabled={disableBoard}
-                    />
-                  );
-                })}
-              </Flex>
-            )
-          ),
-        )}
+                return (
+                  <StyledChessSquare
+                    key={`${rank}${file}`}
+                    bg={isSelected ? (isDark ? '#464' : '#cfc') : isDark ? 'gray.600' : 'white'}
+                    {...getPieceStyle(piece)}
+                    {...borderStyles}
+                    onClick={async () => handleClick(row, col)}
+                    aria-label={`Cell ${rank}${file}`}
+                    colorScheme='none'
+                    disabled={disableBoard}
+                  />
+                );
+              })}
+            </Flex>
+          );
+        })}
 
         {/* File (A–H) labels below the board */}
         <Flex mt={1}>

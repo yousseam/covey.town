@@ -176,10 +176,10 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       !inBounds(move.newRow) ||
       !inBounds(move.newCol)
     ) {
-      throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
+      throw new InvalidParametersError('Move is Illegal');
     }
     if (move.oldRow === move.newRow && move.oldCol === move.newCol) {
-      throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
+      throw new InvalidParametersError('Move is Illegal');
     }
 
     // convert to algebraic squares (row 0 = rank 8, col 0 = file a)
@@ -225,7 +225,8 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     const test = new Chess(this._engine.fen());
     const ok = test.move({ from, to, promotion });
     if (!ok) {
-      throw new InvalidParametersError(BOARD_POSITION_NOT_VALID_MESSAGE);
+      if (this._engine.inCheck()) throw new InvalidParametersError('You are in Check');
+      throw new InvalidParametersError('Move is Illegal');
     }
   }
 

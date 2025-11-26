@@ -157,7 +157,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
         setSelected(null);
 
         // If this is a pawn move to promotion rank, show promotion UI instead of sending move immediately
-        if (isPawnPromotionSquare(movingPiece, newRow)) {
+        if (isPawnPromotionSquare(movingPiece, newRow) && oldRow !== 5 && oldRow !== 2) {
           setPendingPromotion({ oldRow, oldCol, newRow, newCol });
           return;
         }

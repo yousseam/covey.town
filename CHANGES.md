@@ -69,3 +69,8 @@
     - Implemented Rule checking through the backend in ChessAreaController.ts and finalized all the necessary handlers
     - Updated both ChessArea.tsx and ChessBoard.tsx to accommodate the changes
     - Implemented functionality to make the chess board flip upside down if the player is black or is able to join as black
+
+- `11/28/2025`
+    - Created ChessGameArea.test.ts file which implements test suite for
+    ChessGameArea.ts, tests player commands regarding game states
+    - Expanded upon ChessGame.test.ts file to implement testing for basic and final working game states, rule checking and alternating turns tests are included

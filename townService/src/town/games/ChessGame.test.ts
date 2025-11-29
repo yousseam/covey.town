@@ -1,45 +1,84 @@
-import { Chess } from 'chess.ts';
+/**
+ *  Expanded Backend Test Suite for ChessGame.ts.
+ *  Tests Joining behavior
+ *  Tests Game start states
+ *  Tests Legal and Illegal moves
+ *  Tests Promotion logic
+ *  Tests Final Game State detection (checkmate, insufficient material)
+ *  Tests Leaving Game behavior
+ *  Tests Multi-game cycles
+ */
+
+import { BroadcastOperator } from 'socket.io';
 import ChessGame from './ChessGame';
 import InvalidParametersError, {
   BOARD_POSITION_NOT_VALID_MESSAGE,
-  GAME_NOT_IN_PROGRESS_MESSAGE,
-  MOVE_NOT_YOUR_TURN_MESSAGE,
   GAME_FULL_MESSAGE,
+  GAME_NOT_IN_PROGRESS_MESSAGE,
+  GAME_NOT_STARTABLE_MESSAGE,
+  PLAYER_ALREADY_IN_GAME_MESSAGE,
+  PLAYER_NOT_IN_GAME_MESSAGE,
+  MOVE_NOT_YOUR_TURN_MESSAGE,
 } from '../../lib/InvalidParametersError';
 import Player from '../../lib/Player';
-import { ChessMove, ChessGameState, GameMove } from '../../types/CoveyTownSocket';
+import {
+  ChessMove,
+  ChessColor,
+  PlayerID,
+  ServerToClientEvents,
+  SocketData,
+} from '../../types/CoveyTownSocket';
 
-function makePlayer(id: string, userName: string): Player {
-  // Adapt this constructor to your actual Player class
-  // Common pattern in CoveyTown: new Player(userName, id)
-  // If your Player constructor is different, change this helper once.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return new (Player as any)(userName, id);
+// Test Helpers
+
+// Proper TownEmitter mock for backend Player constructor
+function makeMockEmitter(): BroadcastOperator<ServerToClientEvents, SocketData> {
+  const mock: any = {
+    emit: (..._args: unknown[]) => true,
+
+    to: (..._rooms: string[]) => mock,
+    in: (..._rooms: string[]) => mock,
+    except: (..._rooms: string[]) => mock,
+
+    adapter: {
+      rooms: new Map(),
+      sids: new Map(),
+      addAll: () => {},
+      del: () => {},
+      delAll: () => {},
+      broadcast: () => {},
+    },
+  };
+
+  return mock as BroadcastOperator<ServerToClientEvents, SocketData>;
 }
 
-function makeGameMove(playerID: string, gameID: string, move: ChessMove): GameMove<ChessMove> {
-  return { playerID, gameID, move };
+// Create a real Player object
+function makePlayer(userName: string): Player {
+  return new Player(userName, makeMockEmitter());
 }
 
-// Helpers to map algebraic to row/col using the *same convention* as ChessGame
+// Convert "e4" -> { row, col }
 function squareToRowCol(square: string): { row: number; col: number } {
-  const fileChar = square[0];
-  const rank = parseInt(square[1], 10); // 1..8
-  const col = fileChar.charCodeAt(0) - 'a'.charCodeAt(0); // 0..7
-  const row = 8 - rank; // rank 8 -> row 0, rank 1 -> row 7
+  const file = square[0];
+  const rank = Number(square[1]);
+  const col = file.charCodeAt(0) - 'a'.charCodeAt(0);
+  const row = 8 - rank;
   return { row, col };
 }
 
+// Create a ChessMove with ChessGridPosition cast fix
 function makeChessMove(
   from: string,
   to: string,
-  gamePiece: 'White' | 'Black',
+  color: ChessColor,
   promotion?: 'Q' | 'R' | 'B' | 'N',
 ): ChessMove {
   const { row: oldRow, col: oldCol } = squareToRowCol(from);
   const { row: newRow, col: newCol } = squareToRowCol(to);
+
   return {
-    gamePiece,
+    gamePiece: color,
     oldRow: oldRow as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
     oldCol: oldCol as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
     newRow: newRow as 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
@@ -48,116 +87,342 @@ function makeChessMove(
   };
 }
 
-describe('ChessGame', () => {
+// Create GameMove wrapper
+function makeGameMove(playerID: PlayerID, gameID: string, move: ChessMove) {
+  return { playerID, gameID, move };
+}
+
+type MoveTriple = [string, string, Player];
+
+// Test Suite
+
+describe('ChessGame — backend test suite', () => {
   let game: ChessGame;
   let white: Player;
   let black: Player;
-  const gameID = 'test-game-id';
+  let gameID: string;
 
   beforeEach(() => {
     game = new ChessGame();
-    white = makePlayer('white-id', 'whitePlayer');
-    black = makePlayer('black-id', 'blackPlayer');
+    white = makePlayer('white');
+    black = makePlayer('black');
+    gameID = game.id;
 
-    // _join is protected; call via "as any" in tests
-    (game as any)._join(white);
-    (game as any)._join(black);
+    game.join(white);
+    game.join(black);
 
-    // Both players ready -> game IN_PROGRESS
     game.startGame(white);
     game.startGame(black);
   });
 
-  test('initial state after both players ready is IN_PROGRESS with white to move', () => {
-    const { state } = game as any;
-    expect(state.status).toBe('IN_PROGRESS');
-    expect(state.white).toBe(white.id);
-    expect(state.black).toBe(black.id);
-    expect(state.moves.length).toBe(0);
-  });
+  // Join Game Tests
 
-  test('third player cannot join (GAME_FULL_MESSAGE)', () => {
-    const extra = makePlayer('extra-id', 'extra');
-    const anotherGame = new ChessGame();
-    (anotherGame as any)._join(makePlayer('p1', 'p1'));
-    (anotherGame as any)._join(makePlayer('p2', 'p2'));
-    expect(() => (anotherGame as any)._join(extra)).toThrow(InvalidParametersError);
-    expect(() => (anotherGame as any)._join(extra)).toThrow(GAME_FULL_MESSAGE);
-  });
+  describe('joining players', () => {
+    test('first join becomes white, second becomes black', () => {
+      const newGame = new ChessGame();
+      const p1 = makePlayer('p1');
+      const p2 = makePlayer('p2');
 
-  test('legal move e2e4 by white is accepted and recorded', () => {
-    const move = makeChessMove('e2', 'e4', 'White');
+      (newGame as any)._join(p1);
+      expect((newGame as any).state.white).toBe(p1.id);
 
-    const gm = makeGameMove(white.id, gameID, move);
-    expect(() => game.applyMove(gm)).not.toThrow();
-
-    const { state } = game as any;
-    expect(state.moves.length).toBe(1);
-    const lastMove = state.moves[0];
-    expect(lastMove.oldRow).toBe(squareToRowCol('e2').row);
-    expect(lastMove.newRow).toBe(squareToRowCol('e4').row);
-  });
-
-  test('illegal move e2e5 is rejected (BOARD_POSITION_NOT_VALID_MESSAGE)', () => {
-    const move = makeChessMove('e2', 'e5', 'White'); // pawn 3 squares
-
-    const gm = makeGameMove(white.id, gameID, move);
-    expect(() => game.applyMove(gm)).toThrow(InvalidParametersError);
-    expect(() => game.applyMove(gm)).toThrow(BOARD_POSITION_NOT_VALID_MESSAGE);
-  });
-
-  test('black cannot move first (MOVE_NOT_YOUR_TURN_MESSAGE)', () => {
-    const move = makeChessMove('e7', 'e5', 'Black');
-
-    const gm = makeGameMove(black.id, gameID, move);
-    expect(() => game.applyMove(gm)).toThrow(InvalidParametersError);
-    expect(() => game.applyMove(gm)).toThrow(MOVE_NOT_YOUR_TURN_MESSAGE);
-  });
-
-  test('game must be IN_PROGRESS to accept moves', () => {
-    const anotherGame = new ChessGame();
-    const p1 = makePlayer('p1', 'p1');
-    (anotherGame as any)._join(p1);
-
-    const move = makeChessMove('e2', 'e4', 'White');
-    const gm = makeGameMove(p1.id, gameID, move);
-
-    expect(() => anotherGame.applyMove(gm)).toThrow(InvalidParametersError);
-    expect(() => anotherGame.applyMove(gm)).toThrow(GAME_NOT_IN_PROGRESS_MESSAGE);
-  });
-
-  test('Fools mate results in checkmate and winner is black', () => {
-    // Sequence:
-    // 1. f3 e5
-    // 2. g4 Qh4#
-    const moves: { player: Player; sanFrom: string; sanTo: string; color: 'White' | 'Black' }[] = [
-      { player: white, sanFrom: 'f2', sanTo: 'f3', color: 'White' },
-      { player: black, sanFrom: 'e7', sanTo: 'e5', color: 'Black' },
-      { player: white, sanFrom: 'g2', sanTo: 'g4', color: 'White' },
-      { player: black, sanFrom: 'd8', sanTo: 'h4', color: 'Black' }, // Qh4#
-    ];
-
-    moves.forEach(m => {
-      const move = makeChessMove(m.sanFrom, m.sanTo, m.color);
-      const gm = makeGameMove(m.player.id, gameID, move);
-      expect(() => game.applyMove(gm)).not.toThrow();
+      (newGame as any)._join(p2);
+      expect((newGame as any).state.black).toBe(p2.id);
+      expect((newGame as any).state.status).toBe('WAITING_TO_START');
     });
 
-    const { state } = game as any;
-    expect(state.status).toBe('OVER');
-    expect(state.winner).toBe(black.id);
+    test('joining twice throws PLAYER_ALREADY_IN_GAME', () => {
+      expect(() => (game as any)._join(white)).toThrow(PLAYER_ALREADY_IN_GAME_MESSAGE);
+    });
+
+    test('third player rejected (GAME_FULL_MESSAGE)', () => {
+      expect(() => (game as any)._join(makePlayer('extra'))).toThrow(GAME_FULL_MESSAGE);
+    });
   });
 
-  test('leaving during IN_PROGRESS sets winner to remaining player', () => {
-    // White makes a legal first move
-    const firstMove = makeChessMove('e2', 'e4', 'White');
-    game.applyMove(makeGameMove(white.id, gameID, firstMove));
+  // Start Game Tests
 
-    // Black leaves
-    (game as any)._leave(black);
+  describe('startGame()', () => {
+    test('cannot start with only one player', () => {
+      const g = new ChessGame();
+      const p = makePlayer('solo');
+      (g as any)._join(p);
 
-    const { state } = game as any;
-    expect(state.status).toBe('OVER');
-    expect(state.winner).toBe(white.id);
+      expect(() => g.startGame(p)).toThrow(GAME_NOT_STARTABLE_MESSAGE);
+    });
+
+    test('outsider cannot start when game is waiting to start', () => {
+      const g = new ChessGame();
+      const p1 = makePlayer('p1');
+      const p2 = makePlayer('p2');
+      const outsider = makePlayer('outsider');
+
+      g.join(p1);
+      g.join(p2);
+
+      expect((g as any).state.status).toBe('WAITING_TO_START');
+
+      expect(() => g.startGame(outsider)).toThrow(PLAYER_NOT_IN_GAME_MESSAGE);
+    });
+
+    test('second ready triggers IN_PROGRESS', () => {
+      const g = new ChessGame();
+      const p1 = makePlayer('p1');
+      const p2 = makePlayer('p2');
+
+      (g as any)._join(p1);
+      (g as any)._join(p2);
+
+      g.startGame(p1);
+      expect((g as any).state.whiteReady).toBe(true);
+
+      g.startGame(p2);
+      expect((g as any).state.status).toBe('IN_PROGRESS');
+    });
+  });
+
+  // Legal Move Tests
+
+  describe('legal moves', () => {
+    test('white can play e2→e4', () => {
+      const move = makeChessMove('e2', 'e4', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(1);
+    });
+
+    test('multi-move sequence works', () => {
+      const seq: MoveTriple[] = [
+        ['e2', 'e4', white],
+        ['e7', 'e5', black],
+        ['g1', 'f3', white],
+      ];
+
+      seq.forEach(([from, to, player]) => {
+        const color: ChessColor = player === white ? 'White' : 'Black';
+        const move = makeChessMove(from, to, color);
+        game.applyMove(makeGameMove(player.id, gameID, move));
+      });
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+  });
+
+  // Illegal Move Tests
+
+  describe('illegal moves', () => {
+    test('move rejected when game not IN_PROGRESS', () => {
+      const g = new ChessGame();
+      const p = makePlayer('temp');
+      (g as any)._join(p);
+
+      const move = makeChessMove('e2', 'e4', 'White');
+
+      expect(() => g.applyMove(makeGameMove(p.id, g.id, move))).toThrow(
+        GAME_NOT_IN_PROGRESS_MESSAGE,
+      );
+    });
+
+    test('black cannot move first', () => {
+      const move = makeChessMove('e7', 'e5', 'Black');
+      expect(() => game.applyMove(makeGameMove(black.id, gameID, move))).toThrow(
+        MOVE_NOT_YOUR_TURN_MESSAGE,
+      );
+    });
+
+    test('moving from empty square is invalid', () => {
+      const move = makeChessMove('a3', 'a4', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('pawn cannot do illegal jump e2→e5', () => {
+      const move = makeChessMove('e2', 'e5', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('out-of-bounds coordinates rejected', () => {
+      const badMove: ChessMove = {
+        gamePiece: 'White',
+        oldRow: 0,
+        oldCol: 0,
+        newRow: 99 as any,
+        newCol: 0,
+      };
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, badMove))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+  });
+
+  // Promotion Tests
+
+  describe('promotion logic', () => {
+    test('promotion required on last rank', () => {
+      const g = new ChessGame();
+      const pw = makePlayer('pw');
+      const pb = makePlayer('pb');
+
+      (g as any)._join(pw);
+      (g as any)._join(pb);
+      g.startGame(pw);
+      g.startGame(pb);
+
+      // White pawn on a7 ready to promote
+      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+
+      const move = makeChessMove('a7', 'a8', 'White');
+      expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('valid white promotion succeeds (Q)', () => {
+      const g = new ChessGame();
+      const pw = makePlayer('pw');
+      const pb = makePlayer('pb');
+
+      (g as any)._join(pw);
+      (g as any)._join(pb);
+
+      g.startGame(pw);
+      g.startGame(pb);
+
+      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+
+      const move = makeChessMove('a7', 'a8', 'White', 'Q');
+      expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
+    });
+  });
+
+  // Checkmate and Draw Tests
+
+  describe('endgame detection', () => {
+    test("Fool's Mate → black wins", () => {
+      const seq: MoveTriple[] = [
+        ['f2', 'f3', white],
+        ['e7', 'e5', black],
+        ['g2', 'g4', white],
+        ['d8', 'h4', black], // checkmate
+      ];
+
+      seq.forEach(([from, to, player]) => {
+        const color: ChessColor = player === white ? 'White' : 'Black';
+        const move = makeChessMove(from, to, color);
+        game.applyMove(makeGameMove(player.id, gameID, move));
+      });
+
+      const { state } = game.toModel();
+      expect(state.status).toBe('OVER');
+      expect(state.winner).toBe(black.id);
+    });
+
+    test('threefold repetition ends in draw', () => {
+      // three time repetition sequence
+
+      const sequence: Array<[string, string, Player]> = [
+        ['g1', 'f3', white],
+        ['g8', 'f6', black],
+        ['f3', 'g1', white],
+        ['f6', 'g8', black],
+      ];
+
+      for (let i = 0; i < 2; i++) {
+        for (const [from, to, player] of sequence) {
+          const color: ChessColor = player === white ? 'White' : 'Black';
+          const move = makeChessMove(from, to, color);
+          const gm = makeGameMove(player.id, gameID, move);
+          game.applyMove(gm);
+        }
+      }
+
+      const { state } = game.toModel();
+      expect(state.status).toBe('OVER');
+      expect(state.winner).toBeUndefined();
+    });
+  });
+
+  // Leave Game Tests
+
+  describe('leave behavior', () => {
+    test('black leaves during IN_PROGRESS → white wins', () => {
+      const move = makeChessMove('e2', 'e4', 'White');
+      game.applyMove(makeGameMove(white.id, gameID, move));
+
+      (game as any)._leave(black);
+
+      const { state } = game.toModel();
+      expect(state.status).toBe('OVER');
+      expect(state.winner).toBe(white.id);
+    });
+
+    test('leave during WAITING_TO_START resets state', () => {
+      const g = new ChessGame();
+      const p1 = makePlayer('p1');
+      const p2 = makePlayer('p2');
+
+      (g as any)._join(p1);
+      (g as any)._join(p2);
+
+      (g as any)._leave(p2);
+
+      expect(g.toModel().state.status).toBe('WAITING_FOR_PLAYERS');
+    });
+
+    test('outsider leaving throws PLAYER_NOT_IN_GAME', () => {
+      const outsider = makePlayer('outsider');
+      expect(() => (game as any)._leave(outsider)).toThrow(PLAYER_NOT_IN_GAME_MESSAGE);
+    });
+  });
+
+  // Multi Game Tests
+
+  describe('multiple game cycles', () => {
+    test('can start a new game after one ends', () => {
+      const seq: MoveTriple[] = [
+        ['f2', 'f3', white],
+        ['e7', 'e5', black],
+        ['g2', 'g4', white],
+        ['d8', 'h4', black],
+      ];
+
+      seq.forEach(([from, to, player]) => {
+        const color = player === white ? 'White' : 'Black';
+        const move = makeChessMove(from, to, color);
+        game.applyMove(makeGameMove(player.id, gameID, move));
+      });
+
+      expect(game.toModel().state.status).toBe('OVER');
+
+      const g2 = new ChessGame();
+      const p1 = makePlayer('p1');
+      const p2 = makePlayer('p2');
+
+      g2.join(p1);
+      g2.join(p2);
+
+      g2.startGame(p1);
+      g2.startGame(p2);
+
+      const { state } = g2.toModel();
+      expect(state.status).toBe('IN_PROGRESS');
+      expect(state.moves.length).toBe(0);
+    });
+  });
+
+  // toModel Tests
+
+  describe('toModel()', () => {
+    test('returns correct id, players, and state', () => {
+      const model = game.toModel();
+
+      expect(model.id).toBe(game.id);
+      expect(model.players).toContain(white.id);
+      expect(model.players).toContain(black.id);
+      expect(model.state.status).toBe('IN_PROGRESS');
+    });
   });
 });

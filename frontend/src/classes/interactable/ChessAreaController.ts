@@ -94,7 +94,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
    */
   get whoseTurn(): PlayerController | undefined {
     const game = this._model.game;
-    if (!game || game.state.status !== 'IN_PROGRESS') {
+    if (!game || !(game.state) || game.state.status !== 'IN_PROGRESS') {
       return undefined;
     }
     const movesSoFar = game.state.moves.length;

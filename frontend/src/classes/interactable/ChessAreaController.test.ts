@@ -52,9 +52,25 @@ describe('ChessAreaController (placeholder)', () => {
       expect(controller.board.length).toBe(8);
       for (const row of controller.board) expect(row.length).toBe(8);
       expect(controller.board[0][0]).toBe('r');
-      expect(controller.board[7][4]).toBe('K');
+      expect(controller.board[0][1]).toBe('n');
+      expect(controller.board[0][2]).toBe('b');
+      expect(controller.board[0][3]).toBe('q');
+      expect(controller.board[0][4]).toBe('k');
+      expect(controller.board[0][5]).toBe('b');
+      expect(controller.board[0][6]).toBe('n');
+      expect(controller.board[0][7]).toBe('r');
+
       expect(controller.board[1].every(cell => cell === 'p')).toBe(true);
       expect(controller.board[6].every(cell => cell === 'P')).toBe(true);
+
+      expect(controller.board[7][0]).toBe('R');
+      expect(controller.board[7][1]).toBe('N');
+      expect(controller.board[7][2]).toBe('B');
+      expect(controller.board[7][3]).toBe('Q');
+      expect(controller.board[7][4]).toBe('K');
+      expect(controller.board[7][5]).toBe('B');
+      expect(controller.board[7][6]).toBe('N');
+      expect(controller.board[7][7]).toBe('R');
     });
   });
 
@@ -78,6 +94,7 @@ describe('ChessAreaController (placeholder)', () => {
   });
 
   describe('stubbed methods', () => {
+    //TODO: un-stub these
     it('throws NO_GAME_STARTABLE for startGame()', async () => {
       const controller = createController();
       await expect(controller.startGame()).rejects.toThrowError(NO_GAME_STARTABLE);

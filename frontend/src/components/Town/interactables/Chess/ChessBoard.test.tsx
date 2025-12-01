@@ -24,6 +24,8 @@ jest.mock('@chakra-ui/react', () => {
 class MockChessAreaController extends ChessAreaController {
   mockBoard: ChessCell[][] = [];
 
+  mockIsPlayer = false;
+
   mockIsOurTurn = false;
 
   makeMove = jest.fn();
@@ -80,9 +82,11 @@ describe('ChessBoard', () => {
 
   async function checkBoard({
     clickable,
+    checkMakeMove,
     checkToast,
   }: {
     clickable?: boolean;
+    checkMakeMove?: boolean;
     checkToast?: boolean;
   }) {
     const cells = screen.getAllByLabelText(/Cell/);
@@ -97,20 +101,37 @@ describe('ChessBoard', () => {
     );
 
     if (clickable) {
+      // check that all cells are clickable
+      for (let i = 0; i < cells.length; i++) {
+        expect(cells[i]).toBeEnabled();
+        // Click twice to select and then deselect
+        fireEvent.click(cells[i]);
+        fireEvent.click(cells[i]);
+      }
+
       const from = screen.getByLabelText('Cell 2A');
       const to = screen.getByLabelText('Cell 3A');
-      act(() => {
+      if (checkMakeMove) {
+        // Simulate moving a pawn (from A2 to A3)
+        expect(from).toBeEnabled();
+        expect(to).toBeEnabled();
         fireEvent.click(from);
         fireEvent.click(to);
-      });
+        expect(gameAreaController.makeMove).toBeCalledWith(6, 0, 5, 0); // indexes of cells A2 to A3
+      }
+
       await waitFor(() => {
+        // TODO: implement this
         // verify mock board update
       });
 
       if (checkToast) {
+        gameAreaController.makeMove.mockClear();
+        expect(mockToast).not.toBeCalled();
         mockToast.mockClear();
-        const errorMessage = `Fake error ${nanoid()}`;
+        const errorMessage = `Error ${nanoid()}`;
         gameAreaController.makeMove.mockRejectedValue(new Error(errorMessage));
+        fireEvent.click(from);
         fireEvent.click(to);
         await waitFor(() => {
           expect(mockToast).toBeCalledWith(
@@ -121,9 +142,21 @@ describe('ChessBoard', () => {
           );
         });
       }
+    }  else { //if clickable is false,
+      // each cell should be disabled
+      for (let i = 0; i < cells.length; i++) {
+        expect(cells[i]).toBeDisabled();
+        fireEvent.click(cells[i]);
+        // clicking should do nothing
+        expect(gameAreaController.makeMove).not.toHaveBeenCalled();
+      }
     }
   }
 
+  // TODO: 
+  // when playing a game:
+  /** maybe a test for flipping the board for black player? (how would we do that though)
+   */
   describe('[T4.1] Board Rendering', () => {
     it('renders the correct number of cells and labels', async () => {
       render(
@@ -150,9 +183,24 @@ describe('ChessBoard', () => {
     });
   });
 
-  describe('[T4.2] Click and Move Behavior', () => {
+  describe('[T4.2] When a playing a game', () => {
     beforeEach(() => {
       gameAreaController.mockIsOurTurn = true;
+      gameAreaController.mockIsPlayer = true;
+    });
+
+    it('enables squares when it is our turn and disables when not', async () => {
+      render(
+        <ChakraProvider>
+          <ChessBoard gameAreaController={gameAreaController} />
+        </ChakraProvider>,
+      );
+      await checkBoard({ clickable: true });
+      gameAreaController.mockIsOurTurn = false;
+      act(() => {
+        gameAreaController.emit('turnChanged', false);
+      });
+      await checkBoard({ clickable: false });
     });
 
     it('allows selecting and moving a piece visually', async () => {
@@ -161,18 +209,31 @@ describe('ChessBoard', () => {
           <ChessBoard gameAreaController={gameAreaController} />
         </ChakraProvider>,
       );
-      await checkBoard({ clickable: true });
+      await checkBoard({ clickable: true, checkMakeMove: true });
     });
 
-    // Currently no logic exists to decide the legality of a move
-    // This test will need to be expanded upon when further progress is made
-    it.skip('shows an error toast if a move fails', async () => {
+    it('updates board when boardChanged event fires', async () => {
       render(
         <ChakraProvider>
           <ChessBoard gameAreaController={gameAreaController} />
         </ChakraProvider>,
       );
-      await checkBoard({ clickable: true, checkToast: true });
+      await checkBoard({ clickable: true });
+      // simulate external change
+      gameAreaController.mockBoard[5][0] = 'P';
+      act(() => {
+        gameAreaController.emit('boardChanged', gameAreaController.mockBoard);
+      });
+      await checkBoard({ clickable: true });
+    });
+
+    it('shows an error toast if a move fails', async () => {
+      render(
+        <ChakraProvider>
+          <ChessBoard gameAreaController={gameAreaController} />
+        </ChakraProvider>,
+      );
+      await checkBoard({ clickable: true, checkMakeMove: true, checkToast: true });
     });
   });
 });

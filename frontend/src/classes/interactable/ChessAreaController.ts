@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import _ from 'lodash';
 import {
   ChessGameState,
   ChessGridPosition,
@@ -14,6 +15,8 @@ import GameAreaController, {
   NO_GAME_STARTABLE,
   PLAYER_NOT_IN_GAME_ERROR,
 } from './GameAreaController';
+
+const NOT_YOUR_TURN_ERROR = 'Not your turn'
 
 export type ChessCell =
   | 'K'
@@ -100,7 +103,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     const movesSoFar = game.state.moves.length;
     const first = game.state.firstPlayer;
 
-    // White moves on even
+    // White moves on even, Black moves on odd
     const whiteToMove = first === 'White' ? movesSoFar % 2 === 0 : movesSoFar % 2 === 1;
     return whiteToMove ? this.white : this.black;
   }
@@ -117,12 +120,13 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
    * We mirror the game state into a local board.
    */
   protected _updateFrom(newModel: ChessGameAreaModel<ChessGameState>): void {
+    const wasOurTurn = this.whoseTurn?.id === this._townController.ourPlayer.id;
     super._updateFrom(newModel);
 
     // Emit isNotWhite event so ChessBoard can update board orientation while the board is already open
     const isNotWhite = this.isNotWhite;
     this.emit('isNotWhite', isNotWhite);
-    /** (if we ever implement functions in this file for joining and leaving game,
+    /** TODO: (if we ever implement functions in this file for joining and leaving game,
      * put these lines for emitting isNotWhite in those functions instead of here
      * so that isNotWhite is only emitted when a player joins/leaves the game
      * and not every time the game state updates in any way)
@@ -147,7 +151,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     }
 
     // Start from a fresh initial board and replay all moves from state
-    const board: ChessCell[][] = [
+    const newBoard: ChessCell[][] = [
       ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
       ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
       Array(8).fill(undefined),
@@ -160,26 +164,29 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
 
     for (const mv of game.state.moves) {
       const { oldRow, oldCol, newRow, newCol, promotion, gamePiece } = mv;
-      const movingPiece = board[oldRow][oldCol];
+      const movingPiece = newBoard[oldRow][oldCol];
 
       // Clear source square
-      board[oldRow][oldCol] = undefined;
+      newBoard[oldRow][oldCol] = undefined;
 
       // Handle promotion
       if (promotion && movingPiece && (movingPiece === 'P' || movingPiece === 'p')) {
         const isWhite = gamePiece === 'White';
         const promoLetter = promotion; // 'Q' | 'R' | 'B' | 'N'
         const promoPiece = (isWhite ? promoLetter : promoLetter.toLowerCase()) as ChessCell;
-        board[newRow][newCol] = promoPiece;
+        newBoard[newRow][newCol] = promoPiece;
       } else {
         // Normal move, just move the piece
-        board[newRow][newCol] = movingPiece;
+        newBoard[newRow][newCol] = movingPiece;
       }
     }
 
-    this._board = board;
-    this.emit('boardChanged', this._board);
-    this.emit('turnChanged', this.isOurTurn);
+    if (!_.isEqual(newBoard, this._board)) {
+      this._board = newBoard;
+      this.emit('boardChanged', this._board);
+    }
+    const isOurTurn = this.whoseTurn?.id === this._townController.ourPlayer.id;
+    if (wasOurTurn != isOurTurn) this.emit('turnChanged', isOurTurn);
   }
 
   /**
@@ -283,7 +290,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
 
     const whose = this.whoseTurn;
     if (!whose || whose.id !== ourID) {
-      throw new Error(NO_GAME_IN_PROGRESS_ERROR);
+      throw new Error(NOT_YOUR_TURN_ERROR);
     }
 
     const gamePiece: ChessColor = whose === this.white ? 'White' : 'Black';

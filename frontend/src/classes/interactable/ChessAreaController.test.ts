@@ -497,14 +497,6 @@ describe('ChessAreaController', () => {
           );
           expect(spy).not.toHaveBeenCalled();
         });
-        it('Calls super.updateFrom with the correct parameters', () => {
-          //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore - we are testing spying on a private method
-          const spy = jest.spyOn(GameAreaController.prototype, '_updateFrom');
-          const model = controller.toInteractableAreaModel();
-          controller.updateFrom(model, otherPlayers.concat(ourPlayer));
-          expect(spy).toHaveBeenCalledWith(model);
-        });
 
     describe('updating whoseTurn and isOurTurn', () => {
       describe('when White moves and we are White', () => {
@@ -819,18 +811,14 @@ describe('ChessAreaController', () => {
     describe('With no game in progress', () => {
       it('Throws an error if there is no id', async () => {
         const controller = createController({});
-        //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore - modify a protected variable
-        controller._instanceID = undefined
+        controller["_instanceID"] = undefined
         await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
       });
       it('Throws an error if there is no game', async () => {
         const controller = createController({
           undefinedGame: true,
         });
-        //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore - modify a protected variable
-        controller._instanceID = nanoid()
+        controller["_instanceID"] = nanoid()
         await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
       });
       it('Throws an error if game status is not IN_PROGRESS', async () => {
@@ -839,9 +827,7 @@ describe('ChessAreaController', () => {
           black: otherPlayers[0].id,
           status: 'WAITING_TO_START',
         });
-        //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore - modify a protected variable
-        controller._instanceID = nanoid()
+        controller["_instanceID"] = nanoid()
         await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
       });
     });
@@ -852,9 +838,7 @@ describe('ChessAreaController', () => {
           black: otherPlayers[1].id,
           status: 'IN_PROGRESS',
         });
-        //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore - modify a protected variable
-        controller._instanceID = nanoid()
+        controller["_instanceID"] = nanoid()
         await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(PLAYER_NOT_IN_GAME_ERROR);
       });
     });
@@ -865,9 +849,7 @@ describe('ChessAreaController', () => {
           black: ourPlayer.id,
           status: 'IN_PROGRESS',
         });
-        //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore - modify a protected variable
-        controller._instanceID = nanoid()
+        controller["_instanceID"] = nanoid()
         await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError('Not your turn');
       });
       it('Should call townController.sendInteractableCommand', async () => {

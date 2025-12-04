@@ -43,7 +43,7 @@ const StyledChessSquare = chakra(Button, {
     borderRadius: '0',
     userSelect: 'none',
     _disabled: {
-      opacity: '90%'
+      opacity: '75%',
     },
     _focus: {
       boxShadow: 'none'
@@ -92,6 +92,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
   const [isNotWhite, setisNotWhite] = useState(gameAreaController.isNotWhite); // used for flipping the board 180 degrees for black player
   const toast = useToast();
 
+  // if the player is black, display the board, files, and ranks upside down
   const files = isNotWhite ? [...FILES_OG].reverse() : FILES_OG;
   const ranks = isNotWhite ? [...RANKS_OG].reverse() : RANKS_OG;
 

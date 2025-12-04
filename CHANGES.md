@@ -70,6 +70,12 @@
     - Updated both ChessArea.tsx and ChessBoard.tsx to accommodate the changes
     - Implemented functionality to make the chess board flip upside down if the player is black or is able to join as black
 
+- `11/20/2025` 
+    - Modified ChessBoard.tsx to remove the rounding on the corners of the Chess board cells
+
+- `11/25/2025` 
+    - Modified ChessBoard.tsx to be 75% opaque when selecting a cell is disabled
+
 - `11/28/2025`
     - Created ChessGameArea.test.ts file which implements test suite for
     ChessGameArea.ts, tests player commands regarding game states

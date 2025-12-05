@@ -93,7 +93,6 @@ class MockChessAreaController extends ChessAreaController {
 
 
   public mockClear() {
-    //TODO: change so this includes all the pieces in their starting positions?
     this.mockBoard = [];
     for (let i = 0; i < 8; i++) {
       this.mockBoard.push([]);
@@ -286,7 +285,6 @@ describe('ChessArea (frontend only)', () => {
       beforeEach(() => {
         gameAreaController.mockStatus = 'WAITING_FOR_PLAYERS';
       })
-      //TODO: continue refactoring from here
       it('Calls the gameAreaController.joinGame method', () => {
         renderChessArea();
         const button = screen.getByText(join2Plabel);
@@ -330,8 +328,8 @@ describe('ChessArea (frontend only)', () => {
         expect(within(button).queryByText('Loading...')).not.toBeInTheDocument();
       });
       it('Adds the display of the button when a game becomes possible to join', () => {
+        //start with 2 players waiting to start
         gameAreaController.mockStatus = 'WAITING_TO_START';
-        gameAreaController.mockIsPlayer = false;
         gameAreaController.mockWhite = new PlayerController(
           'player 1',
           'player 1',
@@ -343,7 +341,9 @@ describe('ChessArea (frontend only)', () => {
           randomLocation(),
         );
         renderChessArea();
+        //button says 'Start Game', not 'Join 2-player game'
         expect(screen.queryByText(join2Plabel)).not.toBeInTheDocument();
+        // Black player leaves game, so bring back the Join game button
         act(() => {
           gameAreaController.mockStatus = 'WAITING_FOR_PLAYERS';
           gameAreaController.mockBlack = undefined;
@@ -352,7 +352,7 @@ describe('ChessArea (frontend only)', () => {
         expect(screen.queryByText(join2Plabel)).toBeInTheDocument();
       });
       it('Removes the button after the player has joined the game', () => {
-        gameAreaController.mockIsPlayer = false;
+        //black player has joined, but no white
         gameAreaController.mockWhite = undefined;
         gameAreaController.mockBlack = new PlayerController(
           'player 2',
@@ -360,12 +360,15 @@ describe('ChessArea (frontend only)', () => {
           randomLocation(),
         );
         renderChessArea();
+        //Join 2-player game button is on screen
         expect(screen.queryByText(join2Plabel)).toBeInTheDocument();
+        //white player has now joined
         act(() => {
           gameAreaController.mockStatus = 'WAITING_TO_START';
           gameAreaController.mockWhite = ourPlayer;
           gameAreaController.emit('gameUpdated');
         });
+        //Join 2-player game button is no longer on screen; replaced with 'Start Game'
         expect(screen.queryByText(join2Plabel)).not.toBeInTheDocument();
       });
     });
@@ -373,24 +376,15 @@ describe('ChessArea (frontend only)', () => {
   describe('[T3.3] Start game button', () => {
     it('Is not shown if the game status is IN_PROGRESS', () => {
       gameAreaController.mockStatus = 'IN_PROGRESS';
-      gameAreaController.mockWhite = ourPlayer;
-      gameAreaController.mockBlack = new PlayerController(
-        'player 2',
-        'player 2',
-        randomLocation(),
-      );
-      gameAreaController.mockIsPlayer = true;
       renderChessArea();
       expect(screen.queryByText('Start Game')).not.toBeInTheDocument();
     });
     it('Is not shown if the game status is WAITING_FOR_PLAYERS', () => {
       gameAreaController.mockStatus = 'WAITING_FOR_PLAYERS';
-      gameAreaController.mockWhite = ourPlayer;
-      gameAreaController.mockIsPlayer = true;
       renderChessArea();
       expect(screen.queryByText('Start Game')).not.toBeInTheDocument();
     });
-    it('Is shown if the game status is WAITING_TO_START', () => {
+    it('Removes the button once the game is in progress', () => {
       gameAreaController.mockStatus = 'WAITING_TO_START';
       gameAreaController.mockWhite = ourPlayer;
       gameAreaController.mockBlack = new PlayerController(
@@ -401,35 +395,63 @@ describe('ChessArea (frontend only)', () => {
       gameAreaController.mockIsPlayer = true;
       renderChessArea();
       expect(screen.queryByText('Start Game')).toBeInTheDocument();
+      act(() => {
+        gameAreaController.mockStatus = 'IN_PROGRESS';
+        gameAreaController.emit('gameUpdated');
+      });
+      expect(screen.queryByText('Start Game')).not.toBeInTheDocument();
     });
-    describe('When clicked', () => {
-      it('Calls the gameAreaController.startGame method', () => {
+    it('Is shown if the game status is WAITING_TO_START', () => {
+      gameAreaController.mockStatus = 'WAITING_TO_START';
+      renderChessArea();
+      expect(screen.queryByText('Start Game')).toBeInTheDocument();
+    });
+    it('Adds the button when a game becomes possible to start', () => {
+      gameAreaController.mockStatus = 'WAITING_FOR_PLAYERS';
+      gameAreaController.mockWhite = ourPlayer;
+      gameAreaController.mockIsPlayer = true;
+      renderChessArea();
+      expect(screen.queryByText('Start Game')).not.toBeInTheDocument();
+      act(() => {
         gameAreaController.mockStatus = 'WAITING_TO_START';
-        gameAreaController.mockWhite = ourPlayer;
         gameAreaController.mockBlack = new PlayerController(
-          'player 1',
-          'player 1',
+          'player 2',
+          'player 2',
           randomLocation(),
         );
-        gameAreaController.mockIsPlayer = true;
+        gameAreaController.emit('gameUpdated');
+      });
+      expect(screen.queryByText('Start Game')).toBeInTheDocument();
+    });
+    it('Is disabled and set to loading while the player is starting the game', async () => {
+      gameAreaController.mockStatus = 'WAITING_TO_START';
+      renderChessArea();
+      const button = screen.getByText('Start Game');
+      fireEvent.click(button);
+      expect(gameAreaController.startGame).toBeCalled();
+
+      expect(button).toBeDisabled();
+      expect(within(button).queryByText('Loading...')).toBeInTheDocument(); //Check that the loading text is displayed
+      act(() => {
+        startGameResolve();
+      });
+      await waitFor(() => expect(button).toBeEnabled());
+      expect(within(button).queryByText('Loading...')).not.toBeInTheDocument(); //Check that the loading text is not displayed
+    });
+    describe('When clicked', () => {
+      beforeEach(() => {
+        gameAreaController.mockStatus = 'WAITING_TO_START';
         renderChessArea();
         const button = screen.getByText('Start Game');
         fireEvent.click(button);
         expect(gameAreaController.startGame).toBeCalled();
       });
+      
+      it('Calls the gameAreaController.startGame method', () => {
+        // ^ the last statement of beforeEach
+      });
+
       it('Displays a toast with the error message if the startGame method throws an error', async () => {
-        gameAreaController.mockStatus = 'WAITING_TO_START';
-        gameAreaController.mockWhite = ourPlayer;
-        gameAreaController.mockBlack = new PlayerController(
-          'player 2',
-          'player 2',
-          randomLocation(),
-        );
-        gameAreaController.mockIsPlayer = true;
-        renderChessArea();
-        const button = screen.getByText('Start Game');
-        fireEvent.click(button);
-        expect(gameAreaController.startGame).toBeCalled();
         const errorMessage = `Testing error message ${nanoid()}`;
         act(() => {
           startGameReject(new Error(errorMessage));
@@ -442,62 +464,6 @@ describe('ChessArea (frontend only)', () => {
             }),
           );
         });
-      });
-      it('Is disabled and set to loading while the player is starting the game', async () => {
-        gameAreaController.mockStatus = 'WAITING_TO_START';
-        gameAreaController.mockWhite = ourPlayer;
-        gameAreaController.mockBlack = new PlayerController(
-          'player 2',
-          'player 2',
-          randomLocation(),
-        );
-        gameAreaController.mockIsPlayer = true;
-        renderChessArea();
-        const button = screen.getByText('Start Game');
-        fireEvent.click(button);
-        expect(gameAreaController.startGame).toBeCalled();
-
-        expect(button).toBeDisabled();
-        expect(within(button).queryByText('Loading...')).toBeInTheDocument(); //Check that the loading text is displayed
-        act(() => {
-          startGameResolve();
-        });
-        await waitFor(() => expect(button).toBeEnabled());
-        expect(within(button).queryByText('Loading...')).not.toBeInTheDocument(); //Check that the loading text is not displayed
-      });
-      it('Adds the button when a game becomes possible to start', () => {
-        gameAreaController.mockStatus = 'WAITING_FOR_PLAYERS';
-        gameAreaController.mockWhite = ourPlayer;
-        gameAreaController.mockIsPlayer = true;
-        renderChessArea();
-        expect(screen.queryByText('Start Game')).not.toBeInTheDocument();
-        act(() => {
-          gameAreaController.mockStatus = 'WAITING_TO_START';
-          gameAreaController.mockBlack = new PlayerController(
-            'player 2',
-            'player 2',
-            randomLocation(),
-          );
-          gameAreaController.emit('gameUpdated');
-        });
-        expect(screen.queryByText('Start Game')).toBeInTheDocument();
-      });
-      it('Removes the button once the game is in progress', () => {
-        gameAreaController.mockStatus = 'WAITING_TO_START';
-        gameAreaController.mockWhite = ourPlayer;
-        gameAreaController.mockBlack = new PlayerController(
-          'player 2',
-          'player 2',
-          randomLocation(),
-        );
-        gameAreaController.mockIsPlayer = true;
-        renderChessArea();
-        expect(screen.queryByText('Start Game')).toBeInTheDocument();
-        act(() => {
-          gameAreaController.mockStatus = 'IN_PROGRESS';
-          gameAreaController.emit('gameUpdated');
-        });
-        expect(screen.queryByText('Start Game')).not.toBeInTheDocument();
       });
     });
   });
@@ -528,14 +494,21 @@ describe('ChessArea (frontend only)', () => {
       ).toBeInTheDocument();
     });
     
-    it('Displays "White: (No player yet!) if there is no White player', () => {
+    it('Displays "White: (No player yet!)" if there is no White player', () => {
       gameAreaController.mockWhite = undefined;
       renderChessArea();
       expect(screen.getByText(`White: (No player yet!)`)).toBeInTheDocument();
     });
-    it('Displays "Black: (No player yet!) if there is no Black player', () => {
+    it('Displays "Black: (No player yet!)" if there is no Black player', () => {
       gameAreaController.mockBlack = undefined;
       renderChessArea();
+      expect(screen.getByText(`Black: (No player yet!)`)).toBeInTheDocument();
+    });
+    it('Displays both "White: (No player yet!)" and "Black: (No player yet!)" if neither player is there', () => {
+      gameAreaController.mockBlack = undefined;
+      gameAreaController.mockWhite = undefined;
+      renderChessArea();
+      expect(screen.getByText(`White: (No player yet!)`)).toBeInTheDocument();
       expect(screen.getByText(`Black: (No player yet!)`)).toBeInTheDocument();
     });
     it('Updates the White player when the game is updated', () => {
@@ -599,7 +572,8 @@ describe('ChessArea (frontend only)', () => {
       });
     });
 
-    it('Updates the turn when the game is updated', () => {
+    it('Indicates the player\'s turn when the game is updated', () => {
+      //our player's turn
       gameAreaController.mockStatus = 'IN_PROGRESS';
       gameAreaController.mockMoveCount = 2;
       gameAreaController.mockWhite = ourPlayer;
@@ -613,6 +587,7 @@ describe('ChessArea (frontend only)', () => {
       gameAreaController.mockWhoseTurn = ourPlayer;
       renderChessArea();
       expect(screen.getByText(yourTurn, { exact: false })).toBeInTheDocument();
+      //opponent's turn
       act(() => {
         gameAreaController.mockMoveCount = 3;
         gameAreaController.mockWhoseTurn = gameAreaController.black;
@@ -623,21 +598,24 @@ describe('ChessArea (frontend only)', () => {
         screen.getByText(waitForOpp, {exact: false}),).toBeInTheDocument();
     });
 
-    it('Updates the game status when the game is updated', () => {
+    it('Indicates the game status when the game is updated', () => {
       gameAreaController.mockStatus = 'WAITING_TO_START';
       renderChessArea();
       expect(screen.getByText(notStart, { exact: false })).toBeInTheDocument();
+
       act(() => {
         gameAreaController.mockStatus = 'IN_PROGRESS';
         gameAreaController.mockIsOurTurn = true;
         gameAreaController.emit('gameUpdated');
       });
       expect(screen.getByText(yourTurn, { exact: false })).toBeInTheDocument();
+
       act(() => {
         gameAreaController.mockIsOurTurn = false;
         gameAreaController.emit('gameUpdated');
       });
       expect(screen.getByText(waitForOpp, { exact: false })).toBeInTheDocument();
+      
       act(() => {
         gameAreaController.mockStatus = 'OVER';
         gameAreaController.emit('gameUpdated');

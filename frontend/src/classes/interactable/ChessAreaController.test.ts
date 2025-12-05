@@ -119,6 +119,7 @@ describe('ChessAreaController', () => {
         const controller = createController({});
         expect(controller.board.length).toBe(8);
         
+        // check the board as a whole array
         expect(controller.board).toStrictEqual([
           ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
           ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
@@ -130,6 +131,7 @@ describe('ChessAreaController', () => {
           ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
         ]);
       
+        // and just to be safe, check every individual cell as well
         for (const row of controller.board) expect(row.length).toBe(8);
         expect(controller.board[0][0]).toBe('r');
         expect(controller.board[0][1]).toBe('n');
@@ -399,13 +401,34 @@ describe('ChessAreaController', () => {
     });
 
     describe('status', () => {
-      it('should return the status of the game', () => {
-        const controller = createController({
-          status: 'IN_PROGRESS',
-        });
-        expect(controller.status).toBe('IN_PROGRESS');
+      describe('should return the status of the game', () => {
+        let testStatus: GameStatus
+        const statIP = 'IN_PROGRESS';
+        const statWFP = 'WAITING_FOR_PLAYERS';
+        const statWFS = 'WAITING_TO_START';
+        const statOVR = 'OVER';
+        
+        it(`status is ${statIP}`, () => {
+          testStatus = statIP;
+        })
+        it(`status is ${statWFP}`, () => {
+          testStatus = statWFP;
+        })
+        it(`status is ${statWFS}`, () => {
+          testStatus = statWFS;
+        })
+        it(`status is ${statOVR}`, () => {
+          testStatus = statOVR;
+        })
+
+        afterEach(() => {
+          const controller4 = createController({
+            status: testStatus,
+          });
+          expect(controller4.status).toBe(testStatus);
+        })
       });
-      it('should return WAITING_TO_START if the game is not defined', () => {
+      it('should return WAITING_FOR_PLAYERS if the game is not defined', () => {
         const controller = createController({
           undefinedGame: true,
         });
@@ -657,7 +680,7 @@ describe('ChessAreaController', () => {
       });
     });
     describe('emitting boardChanged events', () => {
-      it('emits a boardChanged event if the board has changed', () => {
+      beforeEach(() => {
         expect(controller.board).toStrictEqual([
           ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
           ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
@@ -668,6 +691,8 @@ describe('ChessAreaController', () => {
           ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
           ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
         ]);
+      });
+      it('emits a boardChanged event if the board has changed', () => {
         const spy = jest.fn();
         controller.addListener('boardChanged', spy);
         updateGameWithMove(controller, {
@@ -680,16 +705,6 @@ describe('ChessAreaController', () => {
         expect(spy).toHaveBeenCalledWith(controller.board);
       });
       it('does not emit a boardChanged event if the turn has not changed', () => {
-        expect(controller.board).toStrictEqual([
-          ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-          ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-          [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-          [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-          [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-          [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-          ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-          ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-        ]);
         const spy = jest.fn();
         controller.addListener('boardChanged', spy);
         updateGameWithMove(controller, {
@@ -809,27 +824,28 @@ describe('ChessAreaController', () => {
   });
   describe('[T1.4] makeMove', () => {
     describe('With no game in progress', () => {
+      let controller: ChessAreaController
       it('Throws an error if there is no id', async () => {
-        const controller = createController({});
-        controller["_instanceID"] = undefined
-        await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
+        controller = createController({});
+        controller["_instanceID"] = undefined // no ID
       });
       it('Throws an error if there is no game', async () => {
-        const controller = createController({
-          undefinedGame: true,
+        controller = createController({
+          undefinedGame: true, // no game
         });
         controller["_instanceID"] = nanoid()
-        await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
       });
       it('Throws an error if game status is not IN_PROGRESS', async () => {
-        const controller = createController({
+        controller = createController({
           white: ourPlayer.id,
           black: otherPlayers[0].id,
-          status: 'WAITING_TO_START',
+          status: 'WAITING_TO_START', // not IN_PROGRESS
         });
         controller["_instanceID"] = nanoid()
-        await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
       });
+      afterEach(() => {
+        expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
+      })
     });
     describe('With a game in progress that this user is not in', () => {
       it('Throws an error if this player is not in the game', async () => {

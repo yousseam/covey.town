@@ -120,11 +120,6 @@ describe('ChessBoard', () => {
         expect(gameAreaController.makeMove).toBeCalledWith(6, 0, 5, 0); // indexes of cells A2 to A3
       }
 
-      await waitFor(() => {
-        // TODO: implement this
-        // verify mock board update
-      });
-
       if (checkToast) {
         gameAreaController.makeMove.mockClear();
         expect(mockToast).not.toBeCalled();
@@ -158,23 +153,20 @@ describe('ChessBoard', () => {
   /** maybe a test for flipping the board for black player? (how would we do that though)
    */
   describe('[T4.1] Board Rendering', () => {
-    it('renders the correct number of cells and labels', async () => {
+    beforeEach(() => {
       render(
         <ChakraProvider>
           <ChessBoard gameAreaController={gameAreaController} />
         </ChakraProvider>,
       );
+    });
+    it('renders the correct number of cells and labels', async () => {
       await checkBoard({});
     });
 
     it('updates board when boardChanged event fires', async () => {
-      render(
-        <ChakraProvider>
-          <ChessBoard gameAreaController={gameAreaController} />
-        </ChakraProvider>,
-      );
       await checkBoard({});
-      // simulate external change
+      // simulate change in board
       gameAreaController.mockBoard[5][0] = 'P';
       act(() => {
         gameAreaController.emit('boardChanged', gameAreaController.mockBoard);

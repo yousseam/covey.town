@@ -308,4 +308,15 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
       } as ChessMove,
     });
   }
+
+  public async joinBotGame(
+    color: ChessColor,
+    difficulty: 'easy' | 'medium' | 'hard' = 'medium',
+  ): Promise<void> {
+    await this._townController.sendInteractableCommand(this.id, {
+      type: 'JoinBotGame',
+      color,
+      difficulty,
+    });
+  }
 }

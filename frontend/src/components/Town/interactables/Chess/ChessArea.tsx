@@ -4,7 +4,7 @@ import ChessAreaController from '../../../../classes/interactable/ChessAreaContr
 import PlayerController from '../../../../classes/PlayerController';
 import { useInteractableAreaController } from '../../../../classes/TownController';
 import useTownController from '../../../../hooks/useTownController';
-import { GameStatus, InteractableID } from '../../../../types/CoveyTownSocket';
+import { GameStatus, InteractableID, ChessColor } from '../../../../types/CoveyTownSocket';
 import ChessBoard from './ChessBoard';
 
 /**
@@ -118,20 +118,22 @@ export default function ChessArea({
   /**
    * Called when the player clicks the "Join Game with Bot" button
    */
-  const handleJoinBot = () => {
-    // Placeholder: not implemented yet
-    toast({
-      title: 'Not implemented',
-      description: 'Bot games are not implemented yet.',
-      status: 'info',
-    });
+  const handleJoinBot = async (color: ChessColor) => {
+    setJoiningGame(true);
+    try {
+      await gameAreaController.joinBotGame(color, 'medium');
+    } catch (err) {
+      toast({
+        title: 'Error joining bot game',
+        description: (err as Error).toString(),
+        status: 'error',
+      });
+    }
+    setJoiningGame(false);
   };
 
   let vsButton = <></>;
-  // 'vsButton' is either "Join 2-player Game" if player hasn't joined yet,
-  // "Start Game" if both players joined,
-  // or not displayed if game in progress
-  if (gameStatus == 'IN_PROGRESS') {
+  if (gameStatus === 'IN_PROGRESS') {
     vsButton = <></>;
   } else if (gameStatus === 'WAITING_TO_START') {
     vsButton = (
@@ -141,7 +143,7 @@ export default function ChessArea({
         onClick={handleStartGame}
         isLoading={joiningGame}
         disabled={joiningGame}>
-        Start Game
+        Start Game (PvP)
       </Button>
     );
   } else {
@@ -160,14 +162,24 @@ export default function ChessArea({
   let botButton = <></>;
   if (gameStatus !== 'IN_PROGRESS') {
     botButton = (
-      <Button
-        size='sm'
-        colorScheme='gray'
-        onClick={handleJoinBot}
-        isLoading={joiningGame}
-        disabled={joiningGame}>
-        Join Game with Bot
-      </Button>
+      <VStack spacing={1}>
+        <Button
+          size='sm'
+          colorScheme='gray'
+          onClick={() => handleJoinBot('White')}
+          isLoading={joiningGame}
+          disabled={joiningGame}>
+          Play as White vs Bot
+        </Button>
+        <Button
+          size='sm'
+          colorScheme='gray'
+          onClick={() => handleJoinBot('Black')}
+          isLoading={joiningGame}
+          disabled={joiningGame}>
+          Play as Black vs Bot
+        </Button>
+      </VStack>
     );
   }
 

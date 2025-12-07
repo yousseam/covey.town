@@ -79,6 +79,42 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     const loser = this._engine.turn(); // side to move after mate
     return loser === 'w' ? this.state.black : this.state.white;
   }
+
+  /* Current position in FEN, for sending to Stockfish. */
+  public get fen(): string {
+    return this._engine.fen();
+  }
+
+  /* Whose turn it is, as a ChessColor ('White' | 'Black'). */
+  public get turnColor(): ChessColor {
+    return this._engine.turn() === 'w' ? 'White' : 'Black';
+  }
+
+  /**
+   * Configure this game as a bot game: one human, one bot.
+   * Resets the engine to the initial position and marks the game IN_PROGRESS.
+   *
+   * @param human Player who is playing
+   * @param humanColor 'White' or 'Black' (bot is the opposite color)
+   * @param botID Synthetic PlayerID used for the bot (e.g. '_BOT_')
+   */
+  public configureBotGame(human: Player, humanColor: ChessColor, botID: PlayerID): void {
+    const white = humanColor === 'White' ? human.id : botID;
+    const black = humanColor === 'Black' ? human.id : botID;
+
+    this._engine = new Chess(); // reset board
+    this.state = {
+      ...this.state,
+      moves: [],
+      status: 'IN_PROGRESS',
+      firstPlayer: 'White',
+      white,
+      black,
+      whiteReady: true,
+      blackReady: true,
+      winner: undefined,
+    };
+  }
   /*------------------------------------------------*/
 
   /**

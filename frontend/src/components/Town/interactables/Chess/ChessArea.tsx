@@ -35,6 +35,10 @@ export default function ChessArea({
     gameAreaController.white,
   );
   const [joiningGame, setJoiningGame] = useState(false);
+  const [botMenuOpen, setBotMenuOpen] = useState(false);
+  const [twoPlayerSelected, setTwoPlayerSelected] = useState(false);
+  const [difficultyMenuOpen, setDifficultyMenuOpen] = useState(false);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
 
   const [gameStatus, setGameStatus] = useState<GameStatus>(gameAreaController.status);
   const [moveCount, setMoveCount] = useState<number>(gameAreaController.moveCount);
@@ -86,6 +90,7 @@ export default function ChessArea({
    */
   const handleJoinTwoPlayer = async () => {
     setJoiningGame(true);
+    setTwoPlayerSelected(true);
     try {
       await gameAreaController.joinGame();
     } catch (err) {
@@ -103,6 +108,7 @@ export default function ChessArea({
    */
   const handleStartGame = async () => {
     setJoiningGame(true);
+    setTwoPlayerSelected(true);
     try {
       await gameAreaController.startGame();
     } catch (err) {
@@ -118,10 +124,13 @@ export default function ChessArea({
   /**
    * Called when the player clicks the "Join Game with Bot" button
    */
-  const handleJoinBot = async (color: ChessColor) => {
+  const handleJoinBot = async (
+    color: ChessColor,
+    difficulty: 'easy' | 'medium' | 'hard'
+  ) => {
     setJoiningGame(true);
     try {
-      await gameAreaController.joinBotGame(color, 'medium');
+      await gameAreaController.joinBotGame(color, difficulty);
     } catch (err) {
       toast({
         title: 'Error joining bot game',
@@ -161,26 +170,72 @@ export default function ChessArea({
 
   let botButton = <></>;
   if (gameStatus !== 'IN_PROGRESS') {
+    // Stage 1: initial button
+  if (!difficultyMenuOpen && !botMenuOpen) {
+    botButton = (
+      <Button
+        size='sm'
+        colorScheme='gray'
+        onClick={() => setDifficultyMenuOpen(true)}
+        disabled={joiningGame}
+      >
+        Play Against Bot
+      </Button>
+    );
+  }
+
+  // Stage 2: choose difficulty
+  else if (difficultyMenuOpen) {
     botButton = (
       <VStack spacing={1}>
-        <Button
-          size='sm'
-          colorScheme='gray'
-          onClick={() => handleJoinBot('White')}
-          isLoading={joiningGame}
-          disabled={joiningGame}>
-          Play as White vs Bot
+        <Text>Select Difficulty:</Text>
+        <Button size="sm" onClick={() => { setDifficulty('easy'); setDifficultyMenuOpen(false); setBotMenuOpen(true); }}>
+          Easy
         </Button>
-        <Button
-          size='sm'
-          colorScheme='gray'
-          onClick={() => handleJoinBot('Black')}
-          isLoading={joiningGame}
-          disabled={joiningGame}>
-          Play as Black vs Bot
+        <Button size="sm" onClick={() => { setDifficulty('medium'); setDifficultyMenuOpen(false); setBotMenuOpen(true); }}>
+          Medium
+        </Button>
+        <Button size="sm" onClick={() => { setDifficulty('hard'); setDifficultyMenuOpen(false); setBotMenuOpen(true); }}>
+          Hard
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setDifficultyMenuOpen(false)}>
+          Cancel
         </Button>
       </VStack>
     );
+  }
+
+  // Stage 3: choose color
+  else if (botMenuOpen) {
+    botButton = (
+      <VStack spacing={1}>
+        <Text>Select Side:</Text>
+        <Button
+          size='sm'
+          colorScheme='gray'
+          onClick={() => handleJoinBot('White', difficulty)}
+          disabled={joiningGame}
+        >
+          Play as White
+        </Button>
+        <Button
+          size='sm'
+          colorScheme='gray'
+          onClick={() => handleJoinBot('Black', difficulty)}
+          disabled={joiningGame}
+        >
+          Play as Black
+        </Button>
+        <Button
+          size='sm'
+          variant='ghost'
+          onClick={() => setBotMenuOpen(false)}
+        >
+          Cancel
+        </Button>
+      </VStack>
+    );
+  }
   }
 
   return (
@@ -201,8 +256,9 @@ export default function ChessArea({
         </VStack>
 
         <VStack spacing={2} align='end'>
-          {vsButton}
-          {botButton}
+          {!botMenuOpen && !difficultyMenuOpen && vsButton}
+
+          {!twoPlayerSelected && botButton}
         </VStack>
       </Flex>
 

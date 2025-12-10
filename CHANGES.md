@@ -83,3 +83,13 @@
 
 - `12/9/2025`
     - Removed any remaining eslint-disable and ts-ignore flags in the chess files
+
+- `12/10/2025`
+    - Switched pawn promotion options to display sprites 
+      rather than the name of the piece
+    - Switch bot button display to show one play against bot
+      button to then transition to side and difficulty options
+    - When join two player game button is clicked bot button
+      disappears and vice versa
+    - Board correctly flips if user decides to play as black
+      against the bot

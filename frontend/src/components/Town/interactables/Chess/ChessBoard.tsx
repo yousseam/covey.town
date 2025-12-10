@@ -201,6 +201,31 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
 
   const disableBoard = !isOurTurn || !!pendingPromotion;
 
+  const promotionPieces: Array<'Q' | 'R' | 'B' | 'N'> = ['Q', 'R', 'B', 'N'];
+
+  const isWhitePromotion = pendingPromotion
+    ? board[pendingPromotion.oldRow][pendingPromotion.oldCol] === 'P'
+    : true;
+
+  const getPromotionSprite = (piece: 'Q' | 'R' | 'B' | 'N') => {
+    const key = isWhitePromotion ? piece : piece.toLowerCase();
+    const { x, y } = spriteMap[key as PieceKey];
+
+    const scale = CELL_SIZE / SPRITE_SIZE;
+    const sheetWidth = 6 * SPRITE_SIZE * scale;
+
+    return {
+      backgroundImage: `url(${SPRITE_SHEET})`,
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: `${sheetWidth}px auto`,
+      backgroundPosition: `-${x * CELL_SIZE}px -${y * CELL_SIZE}px`,
+      cursor: 'pointer',
+      border: '1px solid black',
+      borderRadius: '4px',
+      display: 'block',
+    };
+  };
+
   return (
     <>
       <StyledChessBoard aria-label='Chess Board'>
@@ -261,20 +286,20 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
 
       {/* Basic inline promotion UI (no new imports) */}
       {pendingPromotion && (
-        <Flex mt={2} alignItems='center'>
-          <Text mr={2}>Promote pawn to:</Text>
-          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('Q')}>
-            Queen
-          </Button>
-          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('R')}>
-            Rook
-          </Button>
-          <Button size='sm' mr={1} onClick={() => handlePromotionChoice('B')}>
-            Bishop
-          </Button>
-          <Button size='sm' onClick={() => handlePromotionChoice('N')}>
-            Knight
-          </Button>
+        <Flex mt={3} p={2} align='center' bg='gray.200' borderRadius='8px' gap={3}>
+          <Text fontWeight='bold'>Promote pawn to:</Text>
+
+          {promotionPieces.map(piece => (
+            <Box
+              key={piece}
+              onClick={() => handlePromotionChoice(piece)}
+              _hover={{ transform: 'scale(1.1)' }}
+              transition='transform 0.1s ease'
+              width={`${CELL_SIZE}px`}
+              height={`${CELL_SIZE}px`}
+              sx={getPromotionSprite(piece)}
+            />
+          ))}
         </Flex>
       )}
     </>

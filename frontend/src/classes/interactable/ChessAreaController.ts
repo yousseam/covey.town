@@ -54,6 +54,8 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
   ];
 
+  private _forceIsNotWhite: boolean | null = null;
+
   /**
    * Returns the current state of the board.
    *
@@ -219,6 +221,9 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
    * then flip the board 180 degrees
    */
   get isNotWhite(): boolean {
+    if (this._forceIsNotWhite !== null) {
+      return this._forceIsNotWhite;
+    }
     return !!this.white && this.white?.id !== this._townController.ourPlayer.id;
   }
 
@@ -312,6 +317,9 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     color: ChessColor,
     difficulty: 'easy' | 'medium' | 'hard' = 'medium',
   ): Promise<void> {
+    this._forceIsNotWhite = (color === 'Black');
+    this.emit('isNotWhite', this._forceIsNotWhite);
+
     await this._townController.sendInteractableCommand(this.id, {
       type: 'JoinBotGame',
       color,

@@ -80,3 +80,6 @@
     - Created ChessGameArea.test.ts file which implements test suite for
     ChessGameArea.ts, tests player commands regarding game states
     - Expanded upon ChessGame.test.ts file to implement testing for basic and final working game states, rule checking and alternating turns tests are included
+
+- `12/9/2025`
+    - Removed any remaining eslint-disable and ts-ignore flags in the chess files

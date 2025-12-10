@@ -199,6 +199,7 @@ export interface ChessMove {
 
 export type ChessColor = 'White' | 'Black';
 export type ChessGridPosition = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type ChessBotDifficulty = 'easy' | 'medium' | 'hard';
 
 export type InteractableID = string;
 export type GameInstanceID = string;
@@ -255,7 +256,7 @@ interface InteractableCommandBase {
   type: string;
 }
 
-export type InteractableCommand =  ViewingAreaUpdateCommand | JoinGameCommand | GameMoveCommand<TicTacToeMove> | GameMoveCommand<ConnectFourMove> | GameMoveCommand<ChessMove> | StartGameCommand | LeaveGameCommand;
+export type InteractableCommand =  ViewingAreaUpdateCommand | JoinGameCommand | GameMoveCommand<TicTacToeMove> | GameMoveCommand<ConnectFourMove> | GameMoveCommand<ChessMove> | StartGameCommand | LeaveGameCommand | JoinBotGameCommand;
 export interface ViewingAreaUpdateCommand  {
   type: 'ViewingAreaUpdate';
   update: ViewingArea;
@@ -276,11 +277,19 @@ export interface GameMoveCommand<MoveType> {
   gameID: GameInstanceID;
   move: MoveType;
 }
+export interface JoinBotGameCommand {
+  type: 'JoinBotGame';
+  difficulty: ChessBotDifficulty;
+  color: ChessColor;
+}
 export type InteractableCommandReturnType<CommandType extends InteractableCommand> = 
   CommandType extends JoinGameCommand ? { gameID: string}:
+  CommandType extends JoinBotGameCommand ? { gameID: string }:
   CommandType extends ViewingAreaUpdateCommand ? undefined :
   CommandType extends GameMoveCommand<TicTacToeMove> ? undefined :
+  CommandType extends GameMoveCommand<ChessMove> ? undefined :
   CommandType extends LeaveGameCommand ? undefined :
+  CommandType extends StartGameCommand ? undefined :
   never;
 
 export type InteractableCommandResponse<MessageType> = {

@@ -28,17 +28,19 @@ import {
   INVALID_COMMAND_MESSAGE,
 } from '../../lib/InvalidParametersError';
 
-class TestingChessGame extends Game<ChessGameState, ChessMove> {
-  public constructor(priorGame?: ChessGame) {
-    super({
+class TestingChessGame extends ChessGame {
+  public constructor() {
+    super();
+    this.state = {
+      ...this.state,
       moves: [],
       status: 'WAITING_TO_START',
       firstPlayer: 'White',
-    });
+    };
     // ChessGameArea only tests that a game exists.
   }
 
-  public applyMove(_move: GameMove<ChessMove>): void {
+  public override applyMove(_move: GameMove<ChessMove>): void {
     // Area tests only test that this is called with the correct wrapper.
   }
 
@@ -50,7 +52,7 @@ class TestingChessGame extends Game<ChessGameState, ChessMove> {
     };
   }
 
-  public startGame(player: Player) {
+  public override startGame(player: Player): void {
     // Mark the player as ready, onlt tests for call wiring.
     if (this.state.white === player.id) {
       this.state.whiteReady = true;
@@ -59,16 +61,16 @@ class TestingChessGame extends Game<ChessGameState, ChessMove> {
     }
   }
 
-  protected _join(player: Player): void {
-    if (this.state.white) {
-      this.state.black = player.id;
-    } else {
+  protected override _join(player: Player): void {
+    if (!this.state.white) {
       this.state.white = player.id;
+    } else if (!this.state.black) {
+      this.state.black = player.id;
     }
     this._players.push(player);
   }
 
-  protected _leave(_player: Player): void {
+  protected override _leave(_player: Player): void {
     // In this test stub, we don’t adjust white/black on leave;
     // we let endGame() control the winner and status instead.
   }
@@ -86,8 +88,7 @@ describe('ChessGameArea', () => {
     gameConstructorSpy.mockClear();
 
     game = new TestingChessGame();
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore (Testing without using the real ChessGame class)
+    // Test using a double instead of the real class
     gameConstructorSpy.mockReturnValue(game);
 
     white = createPlayerForTesting();
@@ -105,9 +106,10 @@ describe('ChessGameArea', () => {
     gameArea.add(black);
     game.join(black);
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore (Test requires access to protected method)
-    interactableUpdateSpy = jest.spyOn(gameArea as any, '_emitAreaChanged');
+    interactableUpdateSpy = jest.spyOn(
+      gameArea as unknown as { _emitAreaChanged: () => void },
+      '_emitAreaChanged',
+    );
   });
 
   // JoinGame command Test
@@ -484,9 +486,7 @@ describe('ChessGameArea', () => {
   // Invalid command Test
 
   test('[T4.5] When given an invalid command it should throw an error', () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore (Testing an invalid command, only possible at the boundary of the type system)
-    expect(() => gameArea.handleCommand({ type: 'InvalidCommand' }, white)).toThrowError(
+    expect(() => gameArea.handleCommand({ type: 'InvalidCommand' } as never, white)).toThrowError(
       INVALID_COMMAND_MESSAGE,
     );
     expect(interactableUpdateSpy).not.toHaveBeenCalled();

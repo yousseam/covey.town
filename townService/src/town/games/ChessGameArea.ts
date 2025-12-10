@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import InvalidParametersError, {
   GAME_ID_MISSMATCH_MESSAGE,
   GAME_NOT_IN_PROGRESS_MESSAGE,
@@ -35,21 +34,22 @@ export default class ChessGameArea extends GameArea<ChessGame> {
   private _stateUpdated(updatedState: GameInstance<ChessGameState>) {
     if (updatedState.state.status === 'OVER') {
       const gameID = this._game?.id;
-      if (gameID) { //&& !this._history.find(eachResult => eachResult.gameID === gameID)) {
+      if (gameID) {
+        // && !this._history.find(eachResult => eachResult.gameID === gameID)) {
         /** Other condition ("no previous game has the same gameID") is commented out
          * because for some reason if the first two players from the client exit the client
          * and then two new players join, the gameID is the same as the previous game.
          * This results in the second game's outcome not being recorded in the history (and thus the leaderboard).
          * (following games are assigned new gameIDs as expected though)
          * I have no idea why this issue happens with our Chess code but not with ConnectFourGameArea.ts or TicTacToeGameArea.ts
-        */
+         */
         const { white, black } = updatedState.state;
         if (white && black) {
           const whiteName =
             this._occupants.find(eachPlayer => eachPlayer.id === white)?.userName || white;
           const blackName =
             this._occupants.find(eachPlayer => eachPlayer.id === black)?.userName || black;
-            this._history.push({
+          this._history.push({
             gameID,
             // update players' scores
             scores: {
@@ -97,7 +97,7 @@ export default class ChessGameArea extends GameArea<ChessGame> {
       const moveCommand: GameMove<ChessMove> = {
         playerID: _player.id,
         gameID: _command.gameID,
-        move: _command.move as ChessMove,
+        move: _command.move as unknown as ChessMove,
       };
 
       game.applyMove(moveCommand);

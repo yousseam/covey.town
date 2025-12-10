@@ -16,7 +16,7 @@ import GameAreaController, {
   PLAYER_NOT_IN_GAME_ERROR,
 } from './GameAreaController';
 
-const NOT_YOUR_TURN_ERROR = 'Not your turn'
+const NOT_YOUR_TURN_ERROR = 'Not your turn';
 
 export type ChessCell =
   | 'K'

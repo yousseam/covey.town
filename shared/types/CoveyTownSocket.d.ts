@@ -280,6 +280,7 @@ export interface GameMoveCommand<MoveType> {
 export interface JoinBotGameCommand {
   type: 'JoinBotGame';
   difficulty: ChessBotDifficulty;
+  color: ChessColor;
 }
 export type InteractableCommandReturnType<CommandType extends InteractableCommand> = 
   CommandType extends JoinGameCommand ? { gameID: string}:

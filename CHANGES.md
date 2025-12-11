@@ -99,3 +99,8 @@
       legal and illegal moves
     - Leaderboard functionality was inherited, the current Leaderboard.test.tsx
       file handles the event of win/loss/draw in chess
+    - Expanded promotion tests to test for illegal promotion moves
+      and a promotion to a knight, bishop or rook
+    - Added Frontend Bot tests to test the board flip behavior depending on
+      what color the user decides to play as, and tested the button options
+      when clicking to play against the bot(difficulty, color)

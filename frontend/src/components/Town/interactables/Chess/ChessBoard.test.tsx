@@ -228,4 +228,29 @@ describe('ChessBoard', () => {
       await checkBoard({ clickable: true, checkMakeMove: true, checkToast: true });
     });
   });
+
+  describe('[T4.3] Board flip behavior', () => {
+    it('flips the board when flipBoardForBlack event fires', () => {
+      render(
+        <ChakraProvider>
+          <ChessBoard gameAreaController={gameAreaController} />
+        </ChakraProvider>,
+      );
+
+      // default orientation
+      expect(screen.getByText('A')).toBeInTheDocument();
+      expect(screen.getByText('H')).toBeInTheDocument();
+
+      // flip board
+      act(() => {
+        gameAreaController.emit('flipBoardForBlack', true);
+      });
+
+      // pieces should be reversed
+      const fileLabels = ['H','G','F','E','D','C','B','A'];
+      fileLabels.forEach(f => {
+        expect(screen.getByText(f)).toBeInTheDocument();
+      });
+    });
+  });
 });

@@ -529,6 +529,119 @@ describe('ChessGame — backend test suite', () => {
       const move = makeChessMove('a7', 'a8', 'White', 'Q');
       expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
     });
+
+    test('valid white promotion succeeds (N)', () => {
+      const g = new ChessGame();
+      const pw = makePlayer('pw');
+      const pb = makePlayer('pb');
+
+      (g as any)._join(pw);
+      (g as any)._join(pb);
+
+      g.startGame(pw);
+      g.startGame(pb);
+
+      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+
+      const move = makeChessMove('a7', 'a8', 'White', 'N');
+      expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
+    });
+
+    test('valid white promotion succeeds (B)', () => {
+      const g = new ChessGame();
+      const pw = makePlayer('pw');
+      const pb = makePlayer('pb');
+
+      (g as any)._join(pw);
+      (g as any)._join(pb);
+
+      g.startGame(pw);
+      g.startGame(pb);
+
+      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+
+      const move = makeChessMove('a7', 'a8', 'White', 'B');
+      expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
+    });
+
+    test('valid white promotion succeeds (R)', () => {
+      const g = new ChessGame();
+      const pw = makePlayer('pw');
+      const pb = makePlayer('pb');
+
+      (g as any)._join(pw);
+      (g as any)._join(pb);
+
+      g.startGame(pw);
+      g.startGame(pb);
+
+      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+
+      const move = makeChessMove('a7', 'a8', 'White', 'R');
+      expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
+    });
+
+    test('illegal promotion: pawn cannot promote from non-7th rank', () => {
+      const g = new ChessGame();
+      const pw = makePlayer('pw');
+      const pb = makePlayer('pb');
+
+      (g as any)._join(pw);
+      (g as any)._join(pb);
+
+      g.startGame(pw);
+      g.startGame(pb);
+
+      // Pawn on a5, nowhere near promotion
+      (g as any)._engine.load('8/8/8/8/P7/8/8/8 w - - 0 1');
+
+      const move = makeChessMove('a4', 'a5', 'White', 'Q');
+
+      expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('illegal promotion: pawn cannot promote moving backwards', () => {
+      const g = new ChessGame();
+      const pw = makePlayer('pw');
+      const pb = makePlayer('pb');
+
+      (g as any)._join(pw);
+      (g as any)._join(pb);
+
+      g.startGame(pw);
+      g.startGame(pb);
+
+      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+
+      const move = makeChessMove('a7', 'a6', 'White', 'Q');
+
+      expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('illegal promotion: move into invalid square cannot promote', () => {
+      const g = new ChessGame();
+      const pw = makePlayer('pw');
+      const pb = makePlayer('pb');
+
+      (g as any)._join(pw);
+      (g as any)._join(pb);
+
+      g.startGame(pw);
+      g.startGame(pb);
+
+      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+
+      // Pawn tries to move sideways into b8
+      const move = makeChessMove('a7', 'b8', 'White', 'Q');
+
+      expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
   });
 
   // Checkmate and Draw Tests

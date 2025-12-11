@@ -32,6 +32,17 @@ To create an account and configure your local environment:
 | `TWILIO_API_KEY_SECRET` | The secret for the API key you created.   |
 | `TWILIO_API_AUTH_TOKEN` | Visible on your twilio account dashboard. |
 
+#### Setting up Stockfish
+Stockfish 64-bit binaries are already included for both Windows and Linux. By default, the appropriate one of these binaries will be used.
+
+If you want to use [your own binary](https://stockfishchess.org/download/) in a different location, you can set `STOCKFISH_BIN_PATH` in `.env`:
+
+| Config Value         | Description                             |
+| -------------------- | --------------------------------------- |
+| `STOCKFISH_BIN_PATH` | Path to Stockfish command line program. |
+
+If you are running the backend on Linux, you will need to ensure the binary can be executed: `chmod +x ./bin/stockfish/stockfish-ubuntu-x86-64-avx2` from the `townService` directory.
+
 ### Starting the backend
 
 Once your backend is configured, you can start it by running `npm start` in the `townService` directory (the first time you run it, you will also need to run `npm install`).

@@ -55,6 +55,9 @@ export default function ChessArea({
 
     const onGameEnd = () => {
       const winner = gameAreaController.winner;
+      const winnerID = gameAreaController.winnerID;
+      const ourID = townController.ourPlayer.id;
+      
       if (winner) {
         toast({
           title: 'Game over',
@@ -64,6 +67,22 @@ export default function ChessArea({
               : `${winner.userName} won the game.`,
           status: 'info',
         });
+      } else if (winnerID) {
+        // Winner exists but is not a visible human player (e.g., the bot)
+        if (winnerID === ourID) {
+          toast({
+            title: 'Game over',
+            description: 'You won the game.',
+            status: 'info',
+          });
+        } else {
+          // Specific message for bot games
+          toast({
+            title: 'Game over',
+            description: 'The bot won the game.',
+            status: 'info',
+          });
+        }
       } else {
         toast({
           title: 'Game over',
@@ -250,8 +269,8 @@ export default function ChessArea({
 
       <Flex justify='space-between' w='100%'>
         <VStack align='start'>
-          <Text>White: {gameStatus === 'IN_PROGRESS' ? (whitePlayer?.userName ? whitePlayer.userName : (difficulty === null ? '(No player yet!)' : `Bot (${difficulty})`)) : (whitePlayer?.userName || '(No player yet!)')}</Text>
-          <Text>Black: {gameStatus === 'IN_PROGRESS' ? (blackPlayer?.userName ? blackPlayer.userName : (difficulty === null ? '(No player yet!)' : `Bot (${difficulty})`)) : (blackPlayer?.userName || '(No player yet!)')}</Text>
+          <Text>White: {(gameStatus === 'IN_PROGRESS' || gameStatus === 'OVER') ? (whitePlayer?.userName ? whitePlayer.userName : (difficulty === null ? '(No player yet!)' : `Bot (${difficulty})`)) : (whitePlayer?.userName || '(No player yet!)')}</Text>
+          <Text>Black: {(gameStatus === 'IN_PROGRESS' || gameStatus === 'OVER') ? (blackPlayer?.userName ? blackPlayer.userName : (difficulty === null ? '(No player yet!)' : `Bot (${difficulty})`)) : (blackPlayer?.userName || '(No player yet!)')}</Text>
           <Text>Moves played: {moveCount}</Text>
         </VStack>
 

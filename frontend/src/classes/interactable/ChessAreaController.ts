@@ -97,7 +97,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
    */
   get whoseTurn(): PlayerController | undefined {
     const game = this._model.game;
-    if (!game || !(game.state) || game.state.status !== 'IN_PROGRESS') {
+    if (!game || !game.state || game.state.status !== 'IN_PROGRESS') {
       return undefined;
     }
     const movesSoFar = game.state.moves.length;
@@ -244,11 +244,13 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     if (this._forceFlipBoardForBlack !== null) {
       return this._forceFlipBoardForBlack;
     }
-    return (!!this.black && this.black?.id === this._townController.ourPlayer.id)
-            // player is black
-    || (!!this.white && this.white?.id !== this._townController.ourPlayer.id && !this.black); 
-            // or white is a different player and there is no black player; player can join as black
-      //(this way, if the user is an observer, they see from white's pov)
+    return (
+      (!!this.black && this.black?.id === this._townController.ourPlayer.id) ||
+      // player is black
+      (!!this.white && this.white?.id !== this._townController.ourPlayer.id && !this.black)
+    );
+    // or white is a different player and there is no black player; player can join as black
+    //(this way, if the user is an observer, they see from white's pov)
   }
 
   /**
@@ -261,7 +263,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     this.emit('flipBoardForBlack', this.flipBoardForBlack);
   }
 
-   /**
+  /**
    * Returns the raw winner ID from the game state.
    * This may be a real player ID or a synthetic one (e.g., the bot).
    */
@@ -359,7 +361,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     color: ChessColor,
     difficulty: 'easy' | 'medium' | 'hard' = 'medium',
   ): Promise<void> {
-    this._forceFlipBoardForBlack = (color === 'Black');
+    this._forceFlipBoardForBlack = color === 'Black';
     this.emit('flipBoardForBlack', this._forceFlipBoardForBlack);
 
     await this._townController.sendInteractableCommand(this.id, {

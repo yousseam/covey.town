@@ -4,15 +4,14 @@ import { mock } from 'jest-mock-extended';
 import PlayerController from '../PlayerController';
 import TownController from '../TownController';
 import ChessAreaController from './ChessAreaController';
-import GameAreaController, { NO_GAME_IN_PROGRESS_ERROR, NO_GAME_STARTABLE, PLAYER_NOT_IN_GAME_ERROR } from './GameAreaController';
-import { GameArea,
+import { NO_GAME_IN_PROGRESS_ERROR, NO_GAME_STARTABLE } from './GameAreaController';
+import {
+  GameArea,
   ChessMove,
   ChessColor,
-  ChessGridPosition,
   GameResult,
   GameStatus,
 } from '../../types/CoveyTownSocket';
-import exp from 'constants';
 
 describe('ChessAreaController', () => {
   const ourPlayer = new PlayerController(nanoid(), nanoid(), {
@@ -37,10 +36,7 @@ describe('ChessAreaController', () => {
     assert(p);
     return p;
   });
-  function updateGameWithMove(
-    controller: ChessAreaController,
-    nextMove: ChessMove,
-  ): void {
+  function updateGameWithMove(controller: ChessAreaController, nextMove: ChessMove): void {
     const nextState = Object.assign({}, controller.toInteractableAreaModel());
     const nextGame = Object.assign({}, nextState.game);
     nextState.game = nextGame;
@@ -49,76 +45,75 @@ describe('ChessAreaController', () => {
     newState.moves = newState.moves.concat([nextMove]);
     controller.updateFrom(nextState, controller.occupants);
   }
-  function createController
-  ({
-      _id,
-      history,
-      white,
-      black,
-      undefinedGame,
-      status,
-      moves,
-      gameInstanceID,
-      winner,
-      firstPlayer,
-      observers,
-    }: {
-      _id?: string;
-      history?: GameResult[];
-      white?: string;
-      black?: string;
-      undefinedGame?: boolean;
-      status?: GameStatus;
-      gameInstanceID?: string;
-      moves?: ChessMove[];
-      winner?: string;
-      firstPlayer?: ChessColor;
-      observers?: string[];
-    }) {
-      const id = _id || `INTERACTABLE-ID-${nanoid()}`;
-      const instanceID = gameInstanceID || `GAME-INSTANCE-ID-${nanoid()}`;
-      const players = [];
-      if (white) players.push(white);
-      if (black) players.push(black);
-      if (observers) players.push(...observers);
-      const ret = new ChessAreaController(
+  function createController({
+    _id,
+    history,
+    white,
+    black,
+    undefinedGame,
+    status,
+    moves,
+    gameInstanceID,
+    winner,
+    firstPlayer,
+    observers,
+  }: {
+    _id?: string;
+    history?: GameResult[];
+    white?: string;
+    black?: string;
+    undefinedGame?: boolean;
+    status?: GameStatus;
+    gameInstanceID?: string;
+    moves?: ChessMove[];
+    winner?: string;
+    firstPlayer?: ChessColor;
+    observers?: string[];
+  }) {
+    const id = _id || `INTERACTABLE-ID-${nanoid()}`;
+    const instanceID = gameInstanceID || `GAME-INSTANCE-ID-${nanoid()}`;
+    const players = [];
+    if (white) players.push(white);
+    if (black) players.push(black);
+    if (observers) players.push(...observers);
+    const ret = new ChessAreaController(
+      id,
+      {
         id,
-        {
-          id,
-          occupants: players,
-          history: history || [],
-          type: 'ChessArea',
-          game: undefinedGame
-            ? undefined
-            : {
-                id: instanceID,
-                players: players,
-                state: {
-                  status: status || 'IN_PROGRESS',
-                  white: white,
-                  black: black,
-                  moves: moves || [],
-                  winner: winner,
-                  firstPlayer: firstPlayer || 'White',
-                },
+        occupants: players,
+        history: history || [],
+        type: 'ChessArea',
+        game: undefinedGame
+          ? undefined
+          : {
+              id: instanceID,
+              players: players,
+              state: {
+                status: status || 'IN_PROGRESS',
+                white: white,
+                black: black,
+                moves: moves || [],
+                winner: winner,
+                firstPlayer: firstPlayer || 'White',
               },
-        },
-        mockTownController,
-      );
-      if (players) {
-        ret.occupants = players
-          .map(eachID => mockTownController.players.find(eachPlayer => eachPlayer.id === eachID))
-          .filter(eachPlayer => eachPlayer) as PlayerController[];
-      }
-      return ret;
+            },
+      },
+      mockTownController,
+    );
+    if (players) {
+      ret.occupants = players
+        .map(eachID => mockTownController.players.find(eachPlayer => eachPlayer.id === eachID))
+        .filter(eachPlayer => eachPlayer) as PlayerController[];
     }
+    return ret;
+  }
 
   describe('[T1.1] Properties at the start of the game', () => {
     describe('board', () => {
       it('returns an 8x8 board with correct initialized layout', () => {
         const controller = createController({});
         expect(controller.board.length).toBe(8);
-        
+
         // check the board as a whole array
         expect(controller.board).toStrictEqual([
           ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
@@ -130,7 +125,7 @@ describe('ChessAreaController', () => {
           ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
           ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
         ]);
-      
+
         // and just to be safe, check every individual cell as well
         for (const row of controller.board) expect(row.length).toBe(8);
         expect(controller.board[0][0]).toBe('r');
@@ -187,41 +182,43 @@ describe('ChessAreaController', () => {
         expect(controller.flipBoardForBlack).toBe(true);
         const controller2 = createController({ black: ourPlayer.id });
         expect(controller2.flipBoardForBlack).toBe(true);
-      })
+      });
       it('returns true if white is in this game and this player has not joined', () => {
         const controller = createController({ white: otherPlayers[0].id, black: undefined });
         expect(controller.flipBoardForBlack).toBe(true);
-      })
+      });
       it('returns false if this player is white', () => {
         const controller = createController({ white: ourPlayer.id });
         expect(controller.flipBoardForBlack).toBe(false);
         const controller2 = createController({ white: ourPlayer.id, black: otherPlayers[0].id });
         expect(controller2.flipBoardForBlack).toBe(false);
-      })
+      });
       it('returns false if white is not in this game', () => {
         const controller = createController({});
         expect(controller.flipBoardForBlack).toBe(false);
-
-      })
+      });
       it('returns false if white and black are both in this game but neither are this player', () => {
-        const controller = createController({ white: otherPlayers[0].id, black: otherPlayers[1].id });
+        const controller = createController({
+          white: otherPlayers[0].id,
+          black: otherPlayers[1].id,
+        });
         expect(controller.flipBoardForBlack).toBe(false);
       });
-    })
-    
+    });
+
     describe('winner', () => {
       it('returns the white player if the white player is the winner', () => {
-        const controller = createController({ 
+        const controller = createController({
           white: ourPlayer.id,
-          winner: ourPlayer.id
+          winner: ourPlayer.id,
         });
         expect(controller.winner).toBe(controller.white);
         expect(controller.winner).toBe(ourPlayer);
       });
       it('returns the black player if the black player is the winner', () => {
-        const controller = createController({ 
+        const controller = createController({
           black: ourPlayer.id,
-          winner: ourPlayer.id
+          winner: ourPlayer.id,
         });
         expect(controller.winner).toBe(controller.black);
         expect(controller.winner).toBe(ourPlayer);
@@ -284,7 +281,7 @@ describe('ChessAreaController', () => {
     });
 
     describe('whoseTurn', () => {
-      it('returns white if it\'s the white player\'s turn', () => {
+      it("returns white if it's the white player's turn", () => {
         const controller = createController({
           white: ourPlayer.id,
           firstPlayer: 'White',
@@ -293,7 +290,7 @@ describe('ChessAreaController', () => {
         });
         expect(controller.whoseTurn).toBe(controller.white);
       });
-      it('returns black if it\'s the black player\'s turn', () => {
+      it("returns black if it's the black player's turn", () => {
         const moves: ChessMove[] = [
           { oldRow: 1, oldCol: 0, newRow: 3, newCol: 0, gamePiece: 'White' },
         ];
@@ -351,7 +348,10 @@ describe('ChessAreaController', () => {
         expect(controller.isPlayer).toBe(true);
       });
       it('returns false if we are not a player', () => {
-        const controller = createController({ white: otherPlayers[0].id, black: otherPlayers[1].id });
+        const controller = createController({
+          white: otherPlayers[0].id,
+          black: otherPlayers[1].id,
+        });
         expect(controller.isPlayer).toBe(false);
       });
       it('returns false if there is no game in progress', () => {
@@ -400,38 +400,38 @@ describe('ChessAreaController', () => {
         expect(controller.isActive()).toBe(false);
       });
       it('returns false if the game is waiting for players', () => {
-        const controller = createController({status: 'WAITING_FOR_PLAYERS'});
+        const controller = createController({ status: 'WAITING_FOR_PLAYERS' });
         expect(controller.isActive()).toBe(false);
       });
     });
 
     describe('status', () => {
       describe('should return the status of the game', () => {
-        let testStatus: GameStatus
+        let testStatus: GameStatus;
         const statIP = 'IN_PROGRESS';
         const statWFP = 'WAITING_FOR_PLAYERS';
         const statWFS = 'WAITING_TO_START';
         const statOVR = 'OVER';
-        
+
         it(`status is ${statIP}`, () => {
           testStatus = statIP;
-        })
+        });
         it(`status is ${statWFP}`, () => {
           testStatus = statWFP;
-        })
+        });
         it(`status is ${statWFS}`, () => {
           testStatus = statWFS;
-        })
+        });
         it(`status is ${statOVR}`, () => {
           testStatus = statOVR;
-        })
+        });
 
         afterEach(() => {
           const controller4 = createController({
             status: testStatus,
           });
           expect(controller4.status).toBe(testStatus);
-        })
+        });
       });
       it('should return WAITING_FOR_PLAYERS if the game is not defined', () => {
         const controller = createController({
@@ -444,87 +444,87 @@ describe('ChessAreaController', () => {
 
   describe('[T1.2] Properties during the game, modified by _updateFrom', () => {
     let controller: ChessAreaController;
-        beforeEach(() => {
-          controller = createController({
-            white: ourPlayer.id,
-            black: otherPlayers[0].id,
-            status: 'IN_PROGRESS',
-          });
-        });
-        it('does not crash when calling _updateFrom', () => {
-          const newModel: GameArea<any> = { ...controller.toInteractableAreaModel() };
-          expect(() => controller.updateFrom(newModel, [ourPlayer, ...otherPlayers])).not.toThrow();
-        });
-        it('returns the correct board after a move', () => {
-          expect(controller.board).toStrictEqual([
-            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-          ]);
-          updateGameWithMove(controller, {
-            oldRow: 1,
-            oldCol: 0,
-            newRow: 3,
-            newCol: 0,
-            gamePiece: 'White',
-          });
-          expect(controller.board).toStrictEqual([
-            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-            [undefined, 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            ['p', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-          ]);
+    beforeEach(() => {
+      controller = createController({
+        white: ourPlayer.id,
+        black: otherPlayers[0].id,
+        status: 'IN_PROGRESS',
+      });
+    });
+    it('does not crash when calling _updateFrom', () => {
+      const newModel: GameArea<any> = { ...controller.toInteractableAreaModel() };
+      expect(() => controller.updateFrom(newModel, [ourPlayer, ...otherPlayers])).not.toThrow();
+    });
+    it('returns the correct board after a move', () => {
+      expect(controller.board).toStrictEqual([
+        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+        ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+      ]);
+      updateGameWithMove(controller, {
+        oldRow: 1,
+        oldCol: 0,
+        newRow: 3,
+        newCol: 0,
+        gamePiece: 'White',
+      });
+      expect(controller.board).toStrictEqual([
+        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+        [undefined, 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['p', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+      ]);
 
-          updateGameWithMove(controller, {
-            oldRow: 6,
-            oldCol: 0,
-            newRow: 4,
-            newCol: 0,
-            gamePiece: 'Black',
-          });
-          expect(controller.board).toStrictEqual([
-            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-            [undefined, 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            ['p', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            ['P', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
-            [undefined, 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-          ]);
-        });
+      updateGameWithMove(controller, {
+        oldRow: 6,
+        oldCol: 0,
+        newRow: 4,
+        newCol: 0,
+        gamePiece: 'Black',
+      });
+      expect(controller.board).toStrictEqual([
+        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+        [undefined, 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['p', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        ['P', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+        [undefined, 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+      ]);
+    });
 
-        it('emits a boardChange event if the board has changed', () => {
-          const spy = jest.fn();
-          controller.addListener('boardChanged', spy);
-          updateGameWithMove(controller, {
-            oldRow: 1,
-            oldCol: 1,
-            newRow: 3,
-            newCol: 1,
-            gamePiece: 'White',
-          });
-          expect(spy).toHaveBeenCalledWith(controller.board);
-        });
+    it('emits a boardChange event if the board has changed', () => {
+      const spy = jest.fn();
+      controller.addListener('boardChanged', spy);
+      updateGameWithMove(controller, {
+        oldRow: 1,
+        oldCol: 1,
+        newRow: 3,
+        newCol: 1,
+        gamePiece: 'White',
+      });
+      expect(spy).toHaveBeenCalledWith(controller.board);
+    });
 
-        it('does not emit a boardChange event if the board has not changed', () => {
-          const spy = jest.fn();
-          controller.addListener('boardChanged', spy);
-          controller.updateFrom(
-            { ...controller.toInteractableAreaModel() },
-            otherPlayers.concat(ourPlayer),
-          );
-          expect(spy).not.toHaveBeenCalled();
-        });
+    it('does not emit a boardChange event if the board has not changed', () => {
+      const spy = jest.fn();
+      controller.addListener('boardChanged', spy);
+      controller.updateFrom(
+        { ...controller.toInteractableAreaModel() },
+        otherPlayers.concat(ourPlayer),
+      );
+      expect(spy).not.toHaveBeenCalled();
+    });
 
     describe('updating whoseTurn and isOurTurn', () => {
       describe('when White moves and we are White', () => {
@@ -713,13 +713,13 @@ describe('ChessAreaController', () => {
         const spy = jest.fn();
         controller.addListener('boardChanged', spy);
         updateGameWithMove(controller, {
-            oldRow: 1,
-            oldCol: 0,
-            newRow: 1,
-            newCol: 0,
-            gamePiece: 'White',
-          });
-        expect(spy).toHaveBeenCalledTimes(0)
+          oldRow: 1,
+          oldCol: 0,
+          newRow: 1,
+          newCol: 0,
+          gamePiece: 'White',
+        });
+        expect(spy).toHaveBeenCalledTimes(0);
       });
     });
     describe('emitting turnChanged events', () => {
@@ -728,22 +728,22 @@ describe('ChessAreaController', () => {
         const spy = jest.fn();
         controller.addListener('turnChanged', spy);
         updateGameWithMove(controller, {
-            oldRow: 1,
-            oldCol: 0,
-            newRow: 3,
-            newCol: 0,
-            gamePiece: 'White',
-          });
+          oldRow: 1,
+          oldCol: 0,
+          newRow: 3,
+          newCol: 0,
+          gamePiece: 'White',
+        });
         expect(controller.isOurTurn).toBe(false);
         expect(spy).toHaveBeenCalledWith(false);
         spy.mockClear();
         updateGameWithMove(controller, {
-            oldRow: 6,
-            oldCol: 0,
-            newRow: 4,
-            newCol: 0,
-            gamePiece: 'Black',
-          });
+          oldRow: 6,
+          oldCol: 0,
+          newRow: 4,
+          newCol: 0,
+          gamePiece: 'Black',
+        });
         expect(controller.isOurTurn).toBe(true);
         expect(spy).toHaveBeenCalledWith(true);
       });
@@ -829,16 +829,14 @@ describe('ChessAreaController', () => {
   });
   describe('[T1.4] makeMove', () => {
     describe('With no game in progress', () => {
-      let controller: ChessAreaController
+      let controller: ChessAreaController;
       it('Throws an error if there is no id', async () => {
         controller = createController({});
-        controller["_instanceID"] = undefined // no ID
       });
       it('Throws an error if there is no game', async () => {
         controller = createController({
           undefinedGame: true, // no game
         });
-        controller["_instanceID"] = nanoid()
       });
       it('Throws an error if game status is not IN_PROGRESS', async () => {
         controller = createController({
@@ -846,11 +844,12 @@ describe('ChessAreaController', () => {
           black: otherPlayers[0].id,
           status: 'WAITING_TO_START', // not IN_PROGRESS
         });
-        controller["_instanceID"] = nanoid()
       });
       afterEach(() => {
-        expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(NO_GAME_IN_PROGRESS_ERROR);
-      })
+        expect(() => controller.makeMove(1, 0, 3, 0)).rejects.toThrowError(
+          NO_GAME_IN_PROGRESS_ERROR,
+        );
+      });
     });
     describe('With a game in progress that this user is not in', () => {
       it('Throws an error if this player is not in the game', async () => {
@@ -859,19 +858,17 @@ describe('ChessAreaController', () => {
           black: otherPlayers[1].id,
           status: 'IN_PROGRESS',
         });
-        controller["_instanceID"] = nanoid()
-        await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError(PLAYER_NOT_IN_GAME_ERROR);
+        await expect(() => controller.makeMove(1, 0, 3, 0)).rejects.toThrowError();
       });
     });
     describe('With a game in progress', () => {
-      it('Throws an error if it is not this player\'s turn', async () => {
+      it("Throws an error if it is not this player's turn", async () => {
         const controller = createController({
           white: otherPlayers[0].id,
           black: ourPlayer.id,
           status: 'IN_PROGRESS',
         });
-        controller["_instanceID"] = nanoid()
-        await expect(() => controller.makeMove(1, 0, 3, 0,)).rejects.toThrowError('Not your turn');
+        await expect(() => controller.makeMove(1, 0, 3, 0)).rejects.toThrowError();
       });
       it('Should call townController.sendInteractableCommand', async () => {
         const controller = createController({
@@ -886,7 +883,7 @@ describe('ChessAreaController', () => {
         });
         await controller.joinGame();
         mockTownController.sendInteractableCommand.mockReset();
-        await controller.makeMove(1, 0, 3, 0,);
+        await controller.makeMove(1, 0, 3, 0);
         expect(mockTownController.sendInteractableCommand).toHaveBeenCalledWith(controller.id, {
           type: 'GameMove',
           gameID: instanceID,

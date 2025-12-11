@@ -46,8 +46,8 @@ const StyledChessSquare = chakra(Button, {
       opacity: '75%',
     },
     _focus: {
-      boxShadow: 'none'
-    }
+      boxShadow: 'none',
+    },
   },
 });
 
@@ -317,9 +317,13 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
                     key={`${rank}${file}`}
                     bg={
                       isSelected
-                        ? (isDark ? '#464' : '#cfc') // your existing selection colors
+                        ? isDark
+                          ? '#464'
+                          : '#cfc' // your existing selection colors
                         : isTarget
-                        ? (isDark ? '#665500' : '#ffeb99') // highlight legal targets
+                        ? isDark
+                          ? '#665500'
+                          : '#ffeb99' // highlight legal targets
                         : isDark
                         ? 'gray.600'
                         : 'white'

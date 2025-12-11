@@ -15,7 +15,6 @@ import { ChessGameState, GameArea, GameStatus } from '../../../../types/CoveyTow
 import PhaserGameArea from '../GameArea';
 import ChessArea from './ChessArea';
 import * as ChessBoard from './ChessBoard';
-import { title } from 'process';
 
 const mockToast = jest.fn();
 jest.mock('@chakra-ui/react', () => {
@@ -45,7 +44,7 @@ class MockChessAreaController extends ChessAreaController {
   mockIsPlayer = false;
 
   mockWinner: PlayerController | undefined = undefined;
-  
+
   mockWhoseTurn: PlayerController | undefined = undefined;
 
   mockIsOurTurn = false;
@@ -92,7 +91,6 @@ class MockChessAreaController extends ChessAreaController {
   get winner(): PlayerController | undefined {
     return this.mockWinner;
   }
-
 
   public mockClear() {
     this.mockBoard = [];
@@ -142,7 +140,7 @@ describe('ChessArea (frontend only)', () => {
         </TownControllerContext.Provider>
       </ChakraProvider>,
     );
-  };
+  }
 
   beforeEach(() => {
     ourPlayer = new PlayerController('player x', 'player x', randomLocation());
@@ -166,11 +164,11 @@ describe('ChessArea (frontend only)', () => {
         }),
     );
     gameAreaController.startGame.mockImplementation(
-    () =>
-      new Promise<void>((resolve, reject) => {
-        startGameResolve = resolve;
-        startGameReject = reject;
-      }),
+      () =>
+        new Promise<void>((resolve, reject) => {
+          startGameResolve = resolve;
+          startGameReject = reject;
+        }),
     );
   });
 
@@ -262,7 +260,7 @@ describe('ChessArea (frontend only)', () => {
     });
   });
   describe('[T3.2] Join 2-player game button', () => {
-    const join2Plabel = 'Join 2-player Game'
+    const join2Plabel = 'Join 2-player Game';
     it('Is not shown if the game status is IN_PROGRESS', () => {
       gameAreaController.mockStatus = 'IN_PROGRESS';
       renderChessArea();
@@ -286,7 +284,7 @@ describe('ChessArea (frontend only)', () => {
     describe('When clicked', () => {
       beforeEach(() => {
         gameAreaController.mockStatus = 'WAITING_FOR_PLAYERS';
-      })
+      });
       it('Calls the gameAreaController.joinGame method', () => {
         renderChessArea();
         const button = screen.getByText(join2Plabel);
@@ -389,11 +387,7 @@ describe('ChessArea (frontend only)', () => {
     it('Removes the button once the game is in progress', () => {
       gameAreaController.mockStatus = 'WAITING_TO_START';
       gameAreaController.mockWhite = ourPlayer;
-      gameAreaController.mockBlack = new PlayerController(
-        'player 2',
-        'player 2',
-        randomLocation(),
-      );
+      gameAreaController.mockBlack = new PlayerController('player 2', 'player 2', randomLocation());
       gameAreaController.mockIsPlayer = true;
       renderChessArea();
       expect(screen.queryByText('Start Game')).toBeInTheDocument();
@@ -448,7 +442,7 @@ describe('ChessArea (frontend only)', () => {
         fireEvent.click(button);
         expect(gameAreaController.startGame).toBeCalled();
       });
-      
+
       it('Calls the gameAreaController.startGame method', () => {
         // ^ the last statement of beforeEach
       });
@@ -495,7 +489,7 @@ describe('ChessArea (frontend only)', () => {
         screen.getByText(`Black: ${gameAreaController.mockBlack?.userName}`),
       ).toBeInTheDocument();
     });
-    
+
     it('Displays "White: (No player yet!)" if there is no White player', () => {
       gameAreaController.mockWhite = undefined;
       renderChessArea();
@@ -566,8 +560,7 @@ describe('ChessArea (frontend only)', () => {
       fireEvent.click(screen.getByText('Medium'));
       fireEvent.click(screen.getByText('Play as White'));
 
-      expect(gameAreaController.joinBotGame)
-        .toHaveBeenCalledWith('White', 'medium');
+      expect(gameAreaController.joinBotGame).toHaveBeenCalledWith('White', 'medium');
     });
 
     it('calls joinBotGame("Black", difficulty) when selecting Play as Black', () => {
@@ -577,33 +570,32 @@ describe('ChessArea (frontend only)', () => {
       fireEvent.click(screen.getByText('Hard'));
       fireEvent.click(screen.getByText('Play as Black'));
 
-      expect(gameAreaController.joinBotGame)
-        .toHaveBeenCalledWith('Black', 'hard');
+      expect(gameAreaController.joinBotGame).toHaveBeenCalledWith('Black', 'hard');
     });
   });
   const yourTurn = 'Your turn';
   const waitForOpp = 'Waiting for opponent.';
-  const notStart = 'Game not yet started.'
+  const notStart = 'Game not yet started.';
   describe('[T3.5] Game status text', () => {
     describe('If the game state is IN_PROGRESS)', () => {
       let statString: string;
       beforeEach(() => {
         gameAreaController.mockStatus = 'IN_PROGRESS';
       });
-      it(`Displays \'${yourTurn}\' when it is this player's turn`, () => {
+      it(`Displays '${yourTurn}' when it is this player's turn`, () => {
         gameAreaController.mockIsOurTurn = true;
-        statString = yourTurn
-      })
-      it(`Displays \'${waitForOpp}\' when it is not this player's turn`, () => {
+        statString = yourTurn;
+      });
+      it(`Displays '${waitForOpp}' when it is not this player's turn`, () => {
         gameAreaController.mockIsOurTurn = false;
-        statString = waitForOpp
-      })
+        statString = waitForOpp;
+      });
       afterEach(() => {
         renderChessArea();
         expect(screen.getByText(statString, { exact: false })).toBeInTheDocument();
-      })
+      });
     });
-    describe(`If the game state is not IN_PROGRESS, display \'${notStart}\'`, () => {
+    describe(`If the game state is not IN_PROGRESS, display '${notStart}'`, () => {
       it('When the game is waiting to start', () => {
         gameAreaController.mockStatus = 'WAITING_TO_START';
       });
@@ -619,16 +611,12 @@ describe('ChessArea (frontend only)', () => {
       });
     });
 
-    it('Indicates the player\'s turn when the game is updated', () => {
+    it("Indicates the player's turn when the game is updated", () => {
       //our player's turn
       gameAreaController.mockStatus = 'IN_PROGRESS';
       gameAreaController.mockMoveCount = 2;
       gameAreaController.mockWhite = ourPlayer;
-      gameAreaController.mockBlack = new PlayerController(
-        'player 2',
-        'player 2',
-        randomLocation(),
-      );
+      gameAreaController.mockBlack = new PlayerController('player 2', 'player 2', randomLocation());
       gameAreaController.mockIsPlayer = true;
       gameAreaController.mockIsOurTurn = true;
       gameAreaController.mockWhoseTurn = ourPlayer;
@@ -641,8 +629,7 @@ describe('ChessArea (frontend only)', () => {
         gameAreaController.mockIsOurTurn = false;
         gameAreaController.emit('gameUpdated');
       });
-      expect(
-        screen.getByText(waitForOpp, {exact: false}),).toBeInTheDocument();
+      expect(screen.getByText(waitForOpp, { exact: false })).toBeInTheDocument();
     });
 
     it('Indicates the game status when the game is updated', () => {
@@ -662,7 +649,7 @@ describe('ChessArea (frontend only)', () => {
         gameAreaController.emit('gameUpdated');
       });
       expect(screen.getByText(waitForOpp, { exact: false })).toBeInTheDocument();
-      
+
       act(() => {
         gameAreaController.mockStatus = 'OVER';
         gameAreaController.emit('gameUpdated');
@@ -675,15 +662,15 @@ describe('ChessArea (frontend only)', () => {
     describe('When the game ends', () => {
       beforeEach(() => {
         renderChessArea();
-      })
-      
-      const won_toast = `You won the game!`
-      it(`says ${won_toast} if you are the winner`, () => {
+      });
+
+      const wonToast = `You won the game!`;
+      it(`says ${wonToast} if you are the winner`, () => {
         gameAreaController.mockWinner = ourPlayer;
-        act(() => {gameAreaController.emit('gameEnd');});
-        expect(mockToast).toBeCalledWith(
-          expect.objectContaining({description: won_toast}),
-        );
+        act(() => {
+          gameAreaController.emit('gameEnd');
+        });
+        expect(mockToast).toBeCalledWith(expect.objectContaining({ description: wonToast }));
       });
 
       it(`says the opponent won the game if the opponent is the winner`, () => {
@@ -693,24 +680,28 @@ describe('ChessArea (frontend only)', () => {
           randomLocation(),
         );
         gameAreaController.mockWinner = gameAreaController.mockBlack;
-        act(() => {gameAreaController.emit('gameEnd');});
+        act(() => {
+          gameAreaController.emit('gameEnd');
+        });
         expect(mockToast).toBeCalledWith(
-          expect.objectContaining({description: 
-            `${gameAreaController.mockBlack.userName} won the game!`
+          expect.objectContaining({
+            description: `${gameAreaController.mockBlack.userName} won the game!`,
           }),
         );
       });
 
       it(`says the game ended in a draw if there is no winner`, () => {
         gameAreaController.mockWinner = undefined;
-        act(() => {gameAreaController.emit('gameEnd');});
+        act(() => {
+          gameAreaController.emit('gameEnd');
+        });
         expect(mockToast).toBeCalledWith(
-          expect.objectContaining({description: 'The game ended in a draw!'}),
+          expect.objectContaining({ description: 'The game ended in a draw!' }),
         );
-      })
+      });
 
       afterEach(() => {
-        expect.objectContaining({title: 'Game over'})
+        expect.objectContaining({ title: 'Game over' });
       });
     });
     describe('Errors', () => {
@@ -738,7 +729,7 @@ describe('ChessArea (frontend only)', () => {
         const button = screen.getByText('Start Game');
         fireEvent.click(button);
       });
-      
+
       afterEach(() => {
         expect(mockToast).toBeCalledWith(
           expect.objectContaining({
@@ -748,6 +739,6 @@ describe('ChessArea (frontend only)', () => {
           }),
         );
       });
-    })
+    });
   });
 });

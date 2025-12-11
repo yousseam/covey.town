@@ -11,7 +11,7 @@
 
 import { BroadcastOperator } from 'socket.io';
 import ChessGame from './ChessGame';
-import InvalidParametersError, {
+import {
   BOARD_POSITION_NOT_VALID_MESSAGE,
   GAME_FULL_MESSAGE,
   GAME_NOT_IN_PROGRESS_MESSAGE,

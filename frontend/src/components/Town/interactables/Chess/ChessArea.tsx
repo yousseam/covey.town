@@ -149,13 +149,10 @@ export default function ChessArea({
   /**
    * Called when the player clicks the "Join Game with Bot" button
    */
-  const handleJoinBot = async (
-    color: ChessColor,
-    difficulty: 'easy' | 'medium' | 'hard'
-  ) => {
+  const handleJoinBot = async (color: ChessColor, chosenDifficulty: 'easy' | 'medium' | 'hard') => {
     setJoiningGame(true);
     try {
-      await gameAreaController.joinBotGame(color, difficulty);
+      await gameAreaController.joinBotGame(color, chosenDifficulty);
     } catch (err) {
       toast({
         title: 'Error joining bot game',
@@ -196,71 +193,82 @@ export default function ChessArea({
   let botButton = <></>;
   if (gameStatus !== 'IN_PROGRESS') {
     // Stage 1: initial button
-  if (!difficultyMenuOpen && !botMenuOpen) {
-    botButton = (
-      <Button
-        size='sm'
-        colorScheme='gray'
-        onClick={() => setDifficultyMenuOpen(true)}
-        disabled={joiningGame}
-      >
-        Join Game with Bot
-      </Button>
-    );
-  }
-
-  // Stage 2: choose difficulty
-  else if (difficultyMenuOpen) {
-    botButton = (
-      <VStack spacing={1}>
-        <Text>Select Difficulty:</Text>
-        <Button size="sm" onClick={() => { setDifficulty('easy'); setDifficultyMenuOpen(false); setBotMenuOpen(true); }}>
-          Easy
-        </Button>
-        <Button size="sm" onClick={() => { setDifficulty('medium'); setDifficultyMenuOpen(false); setBotMenuOpen(true); }}>
-          Medium
-        </Button>
-        <Button size="sm" onClick={() => { setDifficulty('hard'); setDifficultyMenuOpen(false); setBotMenuOpen(true); }}>
-          Hard
-        </Button>
-        <Button size="sm" variant="ghost" onClick={() => setDifficultyMenuOpen(false)}>
-          Cancel
-        </Button>
-      </VStack>
-    );
-  }
-
-  // Stage 3: choose color
-  else if (botMenuOpen) {
-    botButton = (
-      <VStack spacing={1}>
-        <Text>Select Side:</Text>
+    if (!difficultyMenuOpen && !botMenuOpen) {
+      botButton = (
         <Button
           size='sm'
           colorScheme='gray'
-          onClick={() => handleJoinBot('White', difficulty)}
-          disabled={joiningGame}
-        >
-          Play as White
+          onClick={() => setDifficultyMenuOpen(true)}
+          disabled={joiningGame}>
+          Join Game with Bot
         </Button>
-        <Button
-          size='sm'
-          colorScheme='gray'
-          onClick={() => handleJoinBot('Black', difficulty)}
-          disabled={joiningGame}
-        >
-          Play as Black
-        </Button>
-        <Button
-          size='sm'
-          variant='ghost'
-          onClick={() => setBotMenuOpen(false)}
-        >
-          Cancel
-        </Button>
-      </VStack>
-    );
-  }
+      );
+    }
+
+    // Stage 2: choose difficulty
+    else if (difficultyMenuOpen) {
+      botButton = (
+        <VStack spacing={1}>
+          <Text>Select Difficulty:</Text>
+          <Button
+            size='sm'
+            onClick={() => {
+              setDifficulty('easy');
+              setDifficultyMenuOpen(false);
+              setBotMenuOpen(true);
+            }}>
+            Easy
+          </Button>
+          <Button
+            size='sm'
+            onClick={() => {
+              setDifficulty('medium');
+              setDifficultyMenuOpen(false);
+              setBotMenuOpen(true);
+            }}>
+            Medium
+          </Button>
+          <Button
+            size='sm'
+            onClick={() => {
+              setDifficulty('hard');
+              setDifficultyMenuOpen(false);
+              setBotMenuOpen(true);
+            }}>
+            Hard
+          </Button>
+          <Button size='sm' variant='ghost' onClick={() => setDifficultyMenuOpen(false)}>
+            Cancel
+          </Button>
+        </VStack>
+      );
+    }
+
+    // Stage 3: choose color
+    else if (botMenuOpen) {
+      botButton = (
+        <VStack spacing={1}>
+          <Text>Select Side:</Text>
+          <Button
+            size='sm'
+            colorScheme='gray'
+            onClick={() => handleJoinBot('White', difficulty)}
+            disabled={joiningGame}>
+            Play as White
+          </Button>
+          <Button
+            size='sm'
+            colorScheme='gray'
+            onClick={() => handleJoinBot('Black', difficulty)}
+            disabled={joiningGame}>
+            Play as Black
+          </Button>
+          <Button size='sm' variant='ghost' onClick={() => setBotMenuOpen(false)}>
+            Cancel
+          </Button>
+        </VStack>
+      );
+    }
   }
 
   return (
@@ -275,8 +283,26 @@ export default function ChessArea({
 
       <Flex justify='space-between' w='100%'>
         <VStack align='start'>
-          <Text>White: {(gameStatus === 'IN_PROGRESS' || gameStatus === 'OVER') ? (whitePlayer?.userName ? whitePlayer.userName : (difficulty === null ? '(No player yet!)' : `Bot (${difficulty})`)) : (whitePlayer?.userName || '(No player yet!)')}</Text>
-          <Text>Black: {(gameStatus === 'IN_PROGRESS' || gameStatus === 'OVER') ? (blackPlayer?.userName ? blackPlayer.userName : (difficulty === null ? '(No player yet!)' : `Bot (${difficulty})`)) : (blackPlayer?.userName || '(No player yet!)')}</Text>
+          <Text>
+            White:{' '}
+            {gameStatus === 'IN_PROGRESS' || gameStatus === 'OVER'
+              ? whitePlayer?.userName
+                ? whitePlayer.userName
+                : difficulty === null
+                ? '(No player yet!)'
+                : `Bot (${difficulty})`
+              : whitePlayer?.userName || '(No player yet!)'}
+          </Text>
+          <Text>
+            Black:{' '}
+            {gameStatus === 'IN_PROGRESS' || gameStatus === 'OVER'
+              ? blackPlayer?.userName
+                ? blackPlayer.userName
+                : difficulty === null
+                ? '(No player yet!)'
+                : `Bot (${difficulty})`
+              : blackPlayer?.userName || '(No player yet!)'}
+          </Text>
           <Text>Moves played: {moveCount}</Text>
         </VStack>
 

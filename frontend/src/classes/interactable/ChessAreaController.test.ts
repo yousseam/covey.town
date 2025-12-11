@@ -181,27 +181,32 @@ describe('ChessAreaController', () => {
       });
     });
 
-    describe('isNotWhite', () => {
-      it('returns true if white is in this game and this player is black', () => {
+    describe('flipBoardForBlack', () => {
+      it('returns true if this player is black', () => {
         const controller = createController({ white: otherPlayers[0].id, black: ourPlayer.id });
-        expect(controller.isNotWhite).toBe(true);
+        expect(controller.flipBoardForBlack).toBe(true);
+        const controller2 = createController({ black: ourPlayer.id });
+        expect(controller2.flipBoardForBlack).toBe(true);
       })
       it('returns true if white is in this game and this player has not joined', () => {
         const controller = createController({ white: otherPlayers[0].id, black: undefined });
-        expect(controller.isNotWhite).toBe(true);
+        expect(controller.flipBoardForBlack).toBe(true);
       })
       it('returns false if this player is white', () => {
         const controller = createController({ white: ourPlayer.id });
-        expect(controller.isNotWhite).toBe(false);
+        expect(controller.flipBoardForBlack).toBe(false);
         const controller2 = createController({ white: ourPlayer.id, black: otherPlayers[0].id });
-        expect(controller2.isNotWhite).toBe(false);
+        expect(controller2.flipBoardForBlack).toBe(false);
       })
       it('returns false if white is not in this game', () => {
         const controller = createController({});
-        expect(controller.isNotWhite).toBe(false);
-        const controller2 = createController({ black: ourPlayer.id });
-        expect(controller2.isNotWhite).toBe(false);
+        expect(controller.flipBoardForBlack).toBe(false);
+
       })
+      it('returns false if white and black are both in this game but neither are this player', () => {
+        const controller = createController({ white: otherPlayers[0].id, black: otherPlayers[1].id });
+        expect(controller.flipBoardForBlack).toBe(false);
+      });
     })
     
     describe('winner', () => {

@@ -34,7 +34,7 @@ export type ChessCell =
 export type ChessEvents = GameEventTypes & {
   boardChanged: (board: ChessCell[][]) => void;
   turnChanged: (isOurTurn: boolean) => void;
-  isNotWhite: (isNotWhite: boolean) => void;
+  flipBoardForBlack: (flipBoardForBlack: boolean) => void;
   // TODO: implement this
 };
 
@@ -54,7 +54,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
   ];
 
-  private _forceIsNotWhite: boolean | null = null;
+  private _forceFlipBoardForBlack: boolean | null = null;
 
   /**
    * Returns the current state of the board.
@@ -124,12 +124,12 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     const wasOurTurn = this.whoseTurn?.id === this._townController.ourPlayer.id;
     super._updateFrom(newModel);
 
-    // Emit isNotWhite event so ChessBoard can update board orientation while the board is already open
-    const isNotWhite = this.isNotWhite;
-    this.emit('isNotWhite', isNotWhite);
+    // Emit flipBoardForBlack event so ChessBoard can update board orientation while the board is already open
+    const flipBoardForBlack = this.flipBoardForBlack;
+    this.emit('flipBoardForBlack', flipBoardForBlack);
     /** TODO: (if we ever implement functions in this file for joining and leaving game,
-     * put these lines for emitting isNotWhite in those functions instead of here
-     * so that isNotWhite is only emitted when a player joins/leaves the game
+     * put these lines for emitting flipBoardForBlack in those functions instead of here
+     * so that flipBoardForBlack is only emitted when a player joins/leaves the game
      * and not every time the game state updates in any way)
      */
 
@@ -237,26 +237,29 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   }
 
   /**
-   * Returns true if white is in the game, but that player is not this player
-   * Used for ChessBoard.tsx so that if a white player has already joined,
-   * and this player has yet to join or has joined as the black player,
-   * then flip the board 180 degrees
+   * Returns true if the player is black
+   * or white is a different player and there is no black player (this player can join as black)
+   * In these cases, flip the board 180 degrees
    */
-  get isNotWhite(): boolean {
-    if (this._forceIsNotWhite !== null) {
-      return this._forceIsNotWhite;
+  get flipBoardForBlack(): boolean {
+    if (this._forceFlipBoardForBlack !== null) {
+      return this._forceFlipBoardForBlack;
     }
-    return !!this.white && this.white?.id !== this._townController.ourPlayer.id;
+    return (!!this.black && this.black?.id === this._townController.ourPlayer.id)
+            // player is black
+    || (!!this.white && this.white?.id !== this._townController.ourPlayer.id && !this.black); 
+            // or white is a different player and there is no black player; player can join as black
+      //(this way, if the user is an observer, they see from white's pov)
   }
 
   /**
    * Clear any forced board orientation (used after bot games).
-   * After this, isNotWhite is derived from which player is white.
+   * After this, flipBoardForBlack is derived from which player is white.
    */
   public resetBoardOrientation(): void {
-    this._forceIsNotWhite = null;
+    this._forceFlipBoardForBlack = null;
     // Emit current orientation so ChessBoard updates immediately
-    this.emit('isNotWhite', this.isNotWhite);
+    this.emit('flipBoardForBlack', this.flipBoardForBlack);
   }
 
    /**
@@ -357,8 +360,8 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     color: ChessColor,
     difficulty: 'easy' | 'medium' | 'hard' = 'medium',
   ): Promise<void> {
-    this._forceIsNotWhite = (color === 'Black');
-    this.emit('isNotWhite', this._forceIsNotWhite);
+    this._forceFlipBoardForBlack = (color === 'Black');
+    this.emit('flipBoardForBlack', this._forceFlipBoardForBlack);
 
     await this._townController.sendInteractableCommand(this.id, {
       type: 'JoinBotGame',

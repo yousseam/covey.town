@@ -40,6 +40,8 @@ class MockChessAreaController extends ChessAreaController {
 
   startGame = jest.fn();
 
+  joinBotGame = jest.fn();
+
   mockIsPlayer = false;
 
   mockWinner: PlayerController | undefined = undefined;
@@ -532,6 +534,51 @@ describe('ChessArea (frontend only)', () => {
       expect(
         screen.getByText(`Black: ${gameAreaController.mockBlack?.userName}`),
       ).toBeInTheDocument();
+    });
+  });
+  describe('[T3.7] Bot game join flow', () => {
+    it('opens difficulty menu when clicking Join Game with Bot', () => {
+      renderChessArea();
+
+      fireEvent.click(screen.getByText('Join Game with Bot'));
+
+      expect(screen.getByText('Select Difficulty:')).toBeInTheDocument();
+      expect(screen.getByText('Easy')).toBeInTheDocument();
+      expect(screen.getByText('Medium')).toBeInTheDocument();
+      expect(screen.getByText('Hard')).toBeInTheDocument();
+    });
+
+    it('opens color selection after choosing a difficulty', () => {
+      renderChessArea();
+
+      fireEvent.click(screen.getByText('Join Game with Bot'));
+      fireEvent.click(screen.getByText('Easy'));
+
+      expect(screen.getByText('Select Side:')).toBeInTheDocument();
+      expect(screen.getByText('Play as White')).toBeInTheDocument();
+      expect(screen.getByText('Play as Black')).toBeInTheDocument();
+    });
+
+    it('calls joinBotGame("White", difficulty) when selecting Play as White', () => {
+      renderChessArea();
+
+      fireEvent.click(screen.getByText('Join Game with Bot'));
+      fireEvent.click(screen.getByText('Medium'));
+      fireEvent.click(screen.getByText('Play as White'));
+
+      expect(gameAreaController.joinBotGame)
+        .toHaveBeenCalledWith('White', 'medium');
+    });
+
+    it('calls joinBotGame("Black", difficulty) when selecting Play as Black', () => {
+      renderChessArea();
+
+      fireEvent.click(screen.getByText('Join Game with Bot'));
+      fireEvent.click(screen.getByText('Hard'));
+      fireEvent.click(screen.getByText('Play as Black'));
+
+      expect(gameAreaController.joinBotGame)
+        .toHaveBeenCalledWith('Black', 'hard');
     });
   });
   const yourTurn = 'Your turn';

@@ -11,6 +11,7 @@ import {
   ChessColor,
   GameResult,
   GameStatus,
+  ChessGameState,
 } from '../../types/CoveyTownSocket';
 
 describe('ChessAreaController', () => {
@@ -452,7 +453,7 @@ describe('ChessAreaController', () => {
       });
     });
     it('does not crash when calling _updateFrom', () => {
-      const newModel: GameArea<any> = { ...controller.toInteractableAreaModel() };
+      const newModel: GameArea<ChessGameState> = { ...controller.toInteractableAreaModel() };
       expect(() => controller.updateFrom(newModel, [ourPlayer, ...otherPlayers])).not.toThrow();
     });
     it('returns the correct board after a move', () => {

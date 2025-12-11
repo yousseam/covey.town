@@ -5,7 +5,7 @@ export default class StockfishEngine {
 
   private _buffer = '';
 
-  private _queue: Array<() => Promise<any>> = [];
+  private _queue: Array<() => Promise<void>> = [];
 
   private _busy = false;
 

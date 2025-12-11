@@ -9,7 +9,8 @@
  *  Tests Multi-game cycles
  */
 
-import { BroadcastOperator } from 'socket.io';
+import { mock } from 'jest-mock-extended';
+import { Chess } from 'chess.ts';
 import ChessGame from './ChessGame';
 import {
   BOARD_POSITION_NOT_VALID_MESSAGE,
@@ -25,37 +26,28 @@ import {
   ChessMove,
   ChessColor,
   PlayerID,
-  ServerToClientEvents,
-  SocketData,
+  ChessGridPosition,
+  TownEmitter,
 } from '../../types/CoveyTownSocket';
 
 // Test Helpers
 
-// Proper TownEmitter mock for backend Player constructor
-function makeMockEmitter(): BroadcastOperator<ServerToClientEvents, SocketData> {
-  const mock: any = {
-    emit: (..._args: unknown[]) => true,
-
-    to: (..._rooms: string[]) => mock,
-    in: (..._rooms: string[]) => mock,
-    except: (..._rooms: string[]) => mock,
-
-    adapter: {
-      rooms: new Map(),
-      sids: new Map(),
-      addAll: () => {},
-      del: () => {},
-      delAll: () => {},
-      broadcast: () => {},
-    },
+interface ChessGameTest {
+  state: {
+    status: string;
+    whiteReady: boolean;
+    blackReady: boolean;
+    white?: string;
+    black?: string;
   };
-
-  return mock as BroadcastOperator<ServerToClientEvents, SocketData>;
+  _engine: Chess;
+  _join(p: Player): void;
+  _leave(p: Player): void;
 }
 
 // Create a real Player object
 function makePlayer(userName: string): Player {
-  return new Player(userName, makeMockEmitter());
+  return new Player(userName, mock<TownEmitter>());
 }
 
 // Convert "e4" -> { row, col }
@@ -119,24 +111,28 @@ describe('ChessGame — backend test suite', () => {
 
   describe('joining players', () => {
     test('first join becomes white, second becomes black', () => {
-      const newGame = new ChessGame();
+      const g = new ChessGame();
       const p1 = makePlayer('p1');
       const p2 = makePlayer('p2');
 
-      (newGame as any)._join(p1);
-      expect((newGame as any).state.white).toBe(p1.id);
+      const t = g as unknown as ChessGameTest;
 
-      (newGame as any)._join(p2);
-      expect((newGame as any).state.black).toBe(p2.id);
-      expect((newGame as any).state.status).toBe('WAITING_TO_START');
+      t._join(p1);
+      expect(t.state.white).toBe(p1.id);
+
+      t._join(p2);
+      expect(t.state.black).toBe(p2.id);
+      expect(t.state.status).toBe('WAITING_TO_START');
     });
 
     test('joining twice throws PLAYER_ALREADY_IN_GAME', () => {
-      expect(() => (game as any)._join(white)).toThrow(PLAYER_ALREADY_IN_GAME_MESSAGE);
+      const testGame = game as unknown as ChessGameTest;
+      expect(() => testGame._join(white)).toThrow(PLAYER_ALREADY_IN_GAME_MESSAGE);
     });
 
     test('third player rejected (GAME_FULL_MESSAGE)', () => {
-      expect(() => (game as any)._join(makePlayer('extra'))).toThrow(GAME_FULL_MESSAGE);
+      const testGame = game as unknown as ChessGameTest;
+      expect(() => testGame._join(makePlayer('extra'))).toThrow(GAME_FULL_MESSAGE);
     });
   });
 
@@ -146,7 +142,10 @@ describe('ChessGame — backend test suite', () => {
     test('cannot start with only one player', () => {
       const g = new ChessGame();
       const p = makePlayer('solo');
-      (g as any)._join(p);
+
+      const t = g as unknown as ChessGameTest;
+
+      t._join(p);
 
       expect(() => g.startGame(p)).toThrow(GAME_NOT_STARTABLE_MESSAGE);
     });
@@ -160,7 +159,9 @@ describe('ChessGame — backend test suite', () => {
       g.join(p1);
       g.join(p2);
 
-      expect((g as any).state.status).toBe('WAITING_TO_START');
+      const t = g as unknown as ChessGameTest;
+
+      expect(t.state.status).toBe('WAITING_TO_START');
 
       expect(() => g.startGame(outsider)).toThrow(PLAYER_NOT_IN_GAME_MESSAGE);
     });
@@ -170,14 +171,16 @@ describe('ChessGame — backend test suite', () => {
       const p1 = makePlayer('p1');
       const p2 = makePlayer('p2');
 
-      (g as any)._join(p1);
-      (g as any)._join(p2);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(p1);
+      t._join(p2);
 
       g.startGame(p1);
-      expect((g as any).state.whiteReady).toBe(true);
+      expect(t.state.whiteReady).toBe(true);
 
       g.startGame(p2);
-      expect((g as any).state.status).toBe('IN_PROGRESS');
+      expect(t.state.status).toBe('IN_PROGRESS');
     });
   });
 
@@ -326,7 +329,10 @@ describe('ChessGame — backend test suite', () => {
     test('move rejected when game not IN_PROGRESS', () => {
       const g = new ChessGame();
       const p = makePlayer('temp');
-      (g as any)._join(p);
+
+      const t = g as unknown as ChessGameTest;
+
+      t._join(p);
 
       const move = makeChessMove('e2', 'e4', 'White');
 
@@ -482,7 +488,7 @@ describe('ChessGame — backend test suite', () => {
         gamePiece: 'White',
         oldRow: 0,
         oldCol: 0,
-        newRow: 99 as any,
+        newRow: 99 as unknown as ChessGridPosition,
         newCol: 0,
       };
       expect(() => game.applyMove(makeGameMove(white.id, gameID, badMove))).toThrow(
@@ -499,13 +505,15 @@ describe('ChessGame — backend test suite', () => {
       const pw = makePlayer('pw');
       const pb = makePlayer('pb');
 
-      (g as any)._join(pw);
-      (g as any)._join(pb);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(pw);
+      t._join(pb);
       g.startGame(pw);
       g.startGame(pb);
 
       // White pawn on a7 ready to promote
-      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+      t._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
 
       const move = makeChessMove('a7', 'a8', 'White');
       expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).toThrow(
@@ -518,13 +526,15 @@ describe('ChessGame — backend test suite', () => {
       const pw = makePlayer('pw');
       const pb = makePlayer('pb');
 
-      (g as any)._join(pw);
-      (g as any)._join(pb);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(pw);
+      t._join(pb);
 
       g.startGame(pw);
       g.startGame(pb);
 
-      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+      t._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
 
       const move = makeChessMove('a7', 'a8', 'White', 'Q');
       expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
@@ -535,13 +545,15 @@ describe('ChessGame — backend test suite', () => {
       const pw = makePlayer('pw');
       const pb = makePlayer('pb');
 
-      (g as any)._join(pw);
-      (g as any)._join(pb);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(pw);
+      t._join(pb);
 
       g.startGame(pw);
       g.startGame(pb);
 
-      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+      t._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
 
       const move = makeChessMove('a7', 'a8', 'White', 'N');
       expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
@@ -552,13 +564,15 @@ describe('ChessGame — backend test suite', () => {
       const pw = makePlayer('pw');
       const pb = makePlayer('pb');
 
-      (g as any)._join(pw);
-      (g as any)._join(pb);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(pw);
+      t._join(pb);
 
       g.startGame(pw);
       g.startGame(pb);
 
-      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+      t._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
 
       const move = makeChessMove('a7', 'a8', 'White', 'B');
       expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
@@ -569,13 +583,15 @@ describe('ChessGame — backend test suite', () => {
       const pw = makePlayer('pw');
       const pb = makePlayer('pb');
 
-      (g as any)._join(pw);
-      (g as any)._join(pb);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(pw);
+      t._join(pb);
 
       g.startGame(pw);
       g.startGame(pb);
 
-      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+      t._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
 
       const move = makeChessMove('a7', 'a8', 'White', 'R');
       expect(() => g.applyMove(makeGameMove(pw.id, g.id, move))).not.toThrow();
@@ -586,14 +602,16 @@ describe('ChessGame — backend test suite', () => {
       const pw = makePlayer('pw');
       const pb = makePlayer('pb');
 
-      (g as any)._join(pw);
-      (g as any)._join(pb);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(pw);
+      t._join(pb);
 
       g.startGame(pw);
       g.startGame(pb);
 
       // Pawn on a5, nowhere near promotion
-      (g as any)._engine.load('8/8/8/8/P7/8/8/8 w - - 0 1');
+      t._engine.load('8/8/8/8/P7/8/8/8 w - - 0 1');
 
       const move = makeChessMove('a4', 'a5', 'White', 'Q');
 
@@ -607,13 +625,15 @@ describe('ChessGame — backend test suite', () => {
       const pw = makePlayer('pw');
       const pb = makePlayer('pb');
 
-      (g as any)._join(pw);
-      (g as any)._join(pb);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(pw);
+      t._join(pb);
 
       g.startGame(pw);
       g.startGame(pb);
 
-      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+      t._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
 
       const move = makeChessMove('a7', 'a6', 'White', 'Q');
 
@@ -627,13 +647,15 @@ describe('ChessGame — backend test suite', () => {
       const pw = makePlayer('pw');
       const pb = makePlayer('pb');
 
-      (g as any)._join(pw);
-      (g as any)._join(pb);
+      const t = g as unknown as ChessGameTest;
+
+      t._join(pw);
+      t._join(pb);
 
       g.startGame(pw);
       g.startGame(pb);
 
-      (g as any)._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
+      t._engine.load('8/P7/8/8/8/8/8/8 w - - 0 1');
 
       // Pawn tries to move sideways into b8
       const move = makeChessMove('a7', 'b8', 'White', 'Q');
@@ -698,7 +720,9 @@ describe('ChessGame — backend test suite', () => {
       const move = makeChessMove('e2', 'e4', 'White');
       game.applyMove(makeGameMove(white.id, gameID, move));
 
-      (game as any)._leave(black);
+      const testGame = game as unknown as ChessGameTest;
+
+      testGame._leave(black);
 
       const { state } = game.toModel();
       expect(state.status).toBe('OVER');
@@ -710,17 +734,20 @@ describe('ChessGame — backend test suite', () => {
       const p1 = makePlayer('p1');
       const p2 = makePlayer('p2');
 
-      (g as any)._join(p1);
-      (g as any)._join(p2);
+      const t = g as unknown as ChessGameTest;
 
-      (g as any)._leave(p2);
+      t._join(p1);
+      t._join(p2);
+
+      t._leave(p2);
 
       expect(g.toModel().state.status).toBe('WAITING_FOR_PLAYERS');
     });
 
     test('outsider leaving throws PLAYER_NOT_IN_GAME', () => {
+      const testGame = game as unknown as ChessGameTest;
       const outsider = makePlayer('outsider');
-      expect(() => (game as any)._leave(outsider)).toThrow(PLAYER_NOT_IN_GAME_MESSAGE);
+      expect(() => testGame._leave(outsider)).toThrow(PLAYER_NOT_IN_GAME_MESSAGE);
     });
   });
 

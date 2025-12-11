@@ -696,7 +696,7 @@ describe('ChessArea (frontend only)', () => {
         act(() => {gameAreaController.emit('gameEnd');});
         expect(mockToast).toBeCalledWith(
           expect.objectContaining({description: 
-            `${gameAreaController.mockBlack.userName} won the game.`
+            `${gameAreaController.mockBlack.userName} won the game!`
           }),
         );
       });
@@ -705,7 +705,7 @@ describe('ChessArea (frontend only)', () => {
         gameAreaController.mockWinner = undefined;
         act(() => {gameAreaController.emit('gameEnd');});
         expect(mockToast).toBeCalledWith(
-          expect.objectContaining({description: 'The game ended in a draw.'}),
+          expect.objectContaining({description: 'The game ended in a draw!'}),
         );
       })
 

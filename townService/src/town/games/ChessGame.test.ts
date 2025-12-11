@@ -191,6 +191,118 @@ describe('ChessGame — backend test suite', () => {
       expect(game.toModel().state.moves.length).toBe(1);
     });
 
+    test('pawn can move one square forward e2→e3', () => {
+      const move = makeChessMove('e2', 'e3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(1);
+    });
+
+    test('knight can jump from g1→f3', () => {
+      const move = makeChessMove('g1', 'f3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(1);
+    });
+
+    test('knight can jump from b1→c3', () => {
+      const move = makeChessMove('b1', 'c3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(1);
+    });
+
+    test('knight can move from b1→a3', () => {
+      const move = makeChessMove('b1', 'a3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(1);
+    });
+
+    test('bishop can move diagonally c1→f4 after d2→d3', () => {
+      // open diagonal
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('d2', 'd3', 'White')));
+      // black dummy move
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('c1', 'f4', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+
+    test('bishop can move diagonally f1→c4 after e2→e3', () => {
+      // open diagonal
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('e2', 'e3', 'White')));
+      // black dummy
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('f1', 'c4', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+
+    test('rook can move vertically h1→h3 after h2→h4', () => {
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('h2', 'h4', 'White')));
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('h1', 'h3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+
+    test('rook can move vertically a1→a2 after a2→a3', () => {
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('a2', 'a3', 'White')));
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('h7', 'h6', 'Black')));
+
+      const move = makeChessMove('a1', 'a2', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+
+    test('queen can move vertically d1→d3 after d2→d3', () => {
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('d2', 'd4', 'White')));
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('d1', 'd3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+
+    test('queen can move diagonally d1→h5 after e2→e4', () => {
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('e2', 'e4', 'White')));
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('d1', 'h5', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+
+    test('king can move one square forward e1→e2 after e2→e3', () => {
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('e2', 'e3', 'White')));
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('e1', 'e2', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+
+    test('king can move diagonally e1→d2 after d2→d3 clears path', () => {
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('d2', 'd3', 'White')));
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('e1', 'd2', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).not.toThrow();
+
+      expect(game.toModel().state.moves.length).toBe(3);
+    });
+
     test('multi-move sequence works', () => {
       const seq: MoveTriple[] = [
         ['e2', 'e4', white],
@@ -239,6 +351,127 @@ describe('ChessGame — backend test suite', () => {
 
     test('pawn cannot do illegal jump e2→e5', () => {
       const move = makeChessMove('e2', 'e5', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('pawn cannot move backward e4→e3', () => {
+      // First legal move
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('e2', 'e4', 'White')));
+
+      // Black makes ANY legal move to give turn back to White
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('e4', 'e3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('pawn cannot move sideways e4→f4', () => {
+      game.applyMove(makeGameMove(white.id, gameID, makeChessMove('e2', 'e4', 'White')));
+      game.applyMove(makeGameMove(black.id, gameID, makeChessMove('a7', 'a6', 'Black')));
+
+      const move = makeChessMove('e4', 'f4', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('knight cannot move straight g1→g3', () => {
+      const move = makeChessMove('g1', 'g3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('knight cannot move like a bishop g1→h2', () => {
+      const move = makeChessMove('g1', 'h2', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('knight cannot move to adjacent square g1→h1', () => {
+      const move = makeChessMove('g1', 'h1', 'White'); // sideways 1, illegal
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('bishop cannot move straight c1→c3', () => {
+      const move = makeChessMove('c1', 'c3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('bishop cannot jump over d2 when trying c1→g5', () => {
+      const move = makeChessMove('c1', 'g5', 'White'); // d2 pawn blocks
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('bishop cannot move to non-diagonal offset c1→e2', () => {
+      const move = makeChessMove('c1', 'e2', 'White'); // offset not equal in x,y
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('rook cannot move diagonally a1→c3', () => {
+      const move = makeChessMove('a1', 'c3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('rook cannot move through a2 when trying a1→a4', () => {
+      const move = makeChessMove('a1', 'a4', 'White'); // pawn at a2 blocks
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('queen cannot move like a knight d1→e3', () => {
+      const move = makeChessMove('d1', 'e3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('queen cannot move through pieces d1→d8', () => {
+      const move = makeChessMove('d1', 'd8', 'White'); // blocked by pawns on d2 etc
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('king cannot move two squares sideways e1→g1 (no castling)', () => {
+      const move = makeChessMove('e1', 'g1', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('king cannot move two squares diagonally e1→g3', () => {
+      const move = makeChessMove('e1', 'g3', 'White');
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('king cannot move like a knight e1→f3', () => {
+      const move = makeChessMove('e1', 'f3', 'White'); // knight-move invalid
+      expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
+        BOARD_POSITION_NOT_VALID_MESSAGE,
+      );
+    });
+
+    test('cannot move into own piece e2→e1', () => {
+      const move = makeChessMove('e2', 'e1', 'White'); // king on e1 blocks
       expect(() => game.applyMove(makeGameMove(white.id, gameID, move))).toThrow(
         BOARD_POSITION_NOT_VALID_MESSAGE,
       );

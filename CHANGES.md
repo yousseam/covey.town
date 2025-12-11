@@ -93,3 +93,9 @@
       disappears and vice versa
     - Board correctly flips if user decides to play as black
       against the bot
+
+- `12/10/2025`
+    - Expanded the test suite in ChessGame.test.ts to test for more
+      legal and illegal moves
+    - Leaderboard functionality was inherited, the current Leaderboard.test.tsx
+      file handles the event of win/loss/draw in chess

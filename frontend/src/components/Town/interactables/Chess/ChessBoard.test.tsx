@@ -82,7 +82,6 @@ describe('ChessBoard', () => {
 
   async function checkBoard({
     clickable,
-    checkMakeMove,
     checkToast,
   }: {
     clickable?: boolean;
@@ -127,7 +126,8 @@ describe('ChessBoard', () => {
           );
         });
       }
-    }  else { //if clickable is false,
+    } else {
+      //if clickable is false,
       // each cell should be disabled
       for (let i = 0; i < cells.length; i++) {
         expect(cells[i]).toBeDisabled();
@@ -146,7 +146,7 @@ describe('ChessBoard', () => {
         </ChakraProvider>,
       );
     });
-    
+
     it('renders the correct number of cells and labels', async () => {
       await checkBoard({});
     });
@@ -234,7 +234,7 @@ describe('ChessBoard', () => {
       });
 
       // pieces should be reversed
-      const fileLabels = ['H','G','F','E','D','C','B','A'];
+      const fileLabels = ['H', 'G', 'F', 'E', 'D', 'C', 'B', 'A'];
       fileLabels.forEach(f => {
         expect(screen.getByText(f)).toBeInTheDocument();
       });

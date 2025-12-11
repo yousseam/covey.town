@@ -55,7 +55,7 @@ export default class ChessGameArea extends GameArea<ChessGame> {
     return 'ChessArea';
   }
 
-  private static readonly _BOT_PLAYER_ID = 'ChessBot';
+  private static readonly _botPlayerID = 'ChessBot';
 
   private _bot?: ChessBot;
 
@@ -82,8 +82,8 @@ export default class ChessGameArea extends GameArea<ChessGame> {
         if (
           white &&
           black &&
-          white !== ChessGameArea._BOT_PLAYER_ID &&
-          black !== ChessGameArea._BOT_PLAYER_ID
+          white !== ChessGameArea._botPlayerID &&
+          black !== ChessGameArea._botPlayerID
         ) {
           // games with the BOT don't count towards the leaderboard
           const whiteName =
@@ -125,7 +125,7 @@ export default class ChessGameArea extends GameArea<ChessGame> {
       const promotion = move.promotion?.toUpperCase() as 'Q' | 'R' | 'B' | 'N';
 
       const botMove: GameMove<ChessMove> = {
-        playerID: ChessGameArea._BOT_PLAYER_ID,
+        playerID: ChessGameArea._botPlayerID,
         gameID: game.id,
         move: {
           oldRow,
@@ -225,7 +225,7 @@ export default class ChessGameArea extends GameArea<ChessGame> {
       this._botColor = humanColor === 'White' ? 'Black' : 'White';
 
       // Configure ChessGame so that one seat is the human, the other is the bot ID
-      game.configureBotGame(_player, humanColor, ChessGameArea._BOT_PLAYER_ID);
+      game.configureBotGame(_player, humanColor, ChessGameArea._botPlayerID);
       this._stateUpdated(game.toModel());
 
       // If is bot's turn, tell it to move immediately

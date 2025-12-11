@@ -11,7 +11,6 @@ import { mock } from 'jest-mock-extended';
 import Player from '../../lib/Player';
 import {
   ChessColor,
-  ChessGameState,
   ChessMove,
   GameInstanceID,
   GameMove,
@@ -20,7 +19,6 @@ import {
 import ChessGame from './ChessGame';
 import ChessGameArea from './ChessGameArea';
 import * as ChessGameModule from './ChessGame';
-import Game from './Game';
 import { createPlayerForTesting } from '../../TestUtils';
 import {
   GAME_ID_MISSMATCH_MESSAGE,

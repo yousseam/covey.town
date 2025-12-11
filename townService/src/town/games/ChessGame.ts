@@ -15,9 +15,14 @@ import {
   GameMove,
   PlayerID,
   ChessColor,
+  ChessGridPosition,
 } from '../../types/CoveyTownSocket';
-import { Color, Coords, FENChar } from './chess-game-logic/models';
 import Game from './Game';
+
+export type Coords = {
+  x: number;
+  y: number;
+};
 
 /**
  * A ChessGame is a Game that implements the rules of Chess.
@@ -49,23 +54,6 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
     const file = square[0].charCodeAt(0) - 'a'.charCodeAt(0);
     const rank = parseInt(square[1], 10);
     return { x: file, y: 8 - rank };
-  }
-
-  /* Translate single-letter promotion notation to our FENChar type. */
-  private _promotionFenChar(letter: 'q' | 'r' | 'b' | 'n'): FENChar {
-    const white = this._engine.turn() === 'w';
-    switch (letter) {
-      case 'q':
-        return white ? FENChar.WhiteQueen : FENChar.BlackQueen;
-      case 'r':
-        return white ? FENChar.WhiteRook : FENChar.BlackRook;
-      case 'b':
-        return white ? FENChar.WhiteBishop : FENChar.BlackBishop;
-      case 'n':
-        return white ? FENChar.WhiteKnight : FENChar.BlackKnight;
-      default:
-        return white ? FENChar.WhiteQueen : FENChar.BlackQueen;
-    }
   }
 
   /* Determine the current player's ID based on chess.ts turn. */
@@ -114,6 +102,45 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
       blackReady: true,
       winner: undefined,
     };
+  }
+
+  /**
+   * Returns all legal destination squares (row/col) for the current player
+   * from a given source square in grid coordinates.
+   *
+   * If there is no piece on that square or it is not the current player's piece,
+   * returns an empty array.
+   */
+  public legalMovesFrom(
+    row: ChessGridPosition,
+    col: ChessGridPosition,
+  ): { row: ChessGridPosition; col: ChessGridPosition }[] {
+    // Convert to algebraic square like 'e4'
+    const fromSquare = this._toSquareFromRowCol(row, col);
+
+    const pieceAtFrom = this._engine.get(fromSquare);
+    if (!pieceAtFrom) {
+      return [];
+    }
+
+    // Only allow moves for the side to move
+    if (pieceAtFrom.color !== this._engine.turn()) {
+      return [];
+    }
+
+    // Ask chess.ts for legal moves from this square
+    const moves = this._engine.moves({
+      square: fromSquare,
+      verbose: true,
+    }) as Array<{ to: string }>;
+
+    return moves.map(m => {
+      const coords = this._fromSquare(m.to); // { x, y }
+      return {
+        row: coords.y as ChessGridPosition,
+        col: coords.x as ChessGridPosition,
+      };
+    });
   }
   /*------------------------------------------------*/
 
@@ -331,20 +358,20 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
    */
   protected _leave(player: Player): void {
     // remove the player from the game state
-    const removePlayer = (playerID: string): Color => {
+    const removePlayer = (playerID: string): ChessColor => {
       if (this.state.white === playerID) {
         this.state = {
           ...this.state,
           white: undefined,
         };
-        return 0;
+        return 'White';
       }
       if (this.state.black === playerID) {
         this.state = {
           ...this.state,
           black: undefined,
         };
-        return 1;
+        return 'Black';
       }
       throw new InvalidParametersError(PLAYER_NOT_IN_GAME_MESSAGE);
     };
@@ -384,7 +411,7 @@ export default class ChessGame extends Game<ChessGameState, ChessMove> {
         this.state = {
           ...this.state,
           status: 'OVER',
-          winner: color === 0 ? this.state.black : this.state.white,
+          winner: color === 'White' ? this.state.black : this.state.white,
           whiteReady: false,
           blackReady: false,
         };

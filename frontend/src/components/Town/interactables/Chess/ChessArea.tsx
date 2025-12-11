@@ -179,7 +179,7 @@ export default function ChessArea({
         onClick={() => setDifficultyMenuOpen(true)}
         disabled={joiningGame}
       >
-        Play Against Bot
+        Join Game with Bot
       </Button>
     );
   }
@@ -250,8 +250,8 @@ export default function ChessArea({
 
       <Flex justify='space-between' w='100%'>
         <VStack align='start'>
-          <Text>White: {whitePlayer?.userName || '(No player yet!)'}</Text>
-          <Text>Black: {blackPlayer?.userName || '(No player yet!)'}</Text>
+          <Text>White: {gameStatus === 'IN_PROGRESS' ? (whitePlayer?.userName ? whitePlayer.userName : (difficulty === null ? '(No player yet!)' : `Bot (${difficulty})`)) : (whitePlayer?.userName || '(No player yet!)')}</Text>
+          <Text>Black: {gameStatus === 'IN_PROGRESS' ? (blackPlayer?.userName ? blackPlayer.userName : (difficulty === null ? '(No player yet!)' : `Bot (${difficulty})`)) : (blackPlayer?.userName || '(No player yet!)')}</Text>
           <Text>Moves played: {moveCount}</Text>
         </VStack>
 

@@ -2,6 +2,7 @@ import InvalidParametersError, {
   GAME_ID_MISSMATCH_MESSAGE,
   GAME_NOT_IN_PROGRESS_MESSAGE,
   INVALID_COMMAND_MESSAGE,
+  PLAYER_NOT_IN_GAME_MESSAGE,
 } from '../../lib/InvalidParametersError';
 import Player from '../../lib/Player';
 import {
@@ -15,6 +16,7 @@ import {
   ChessBotDifficulty,
   ChessColor,
   ChessGridPosition,
+  GameInstanceID,
 } from '../../types/CoveyTownSocket';
 import ChessGame from './ChessGame';
 import GameArea from './GameArea';
@@ -26,11 +28,18 @@ type JoinBotGameCommand = InteractableCommand & {
   color?: ChessColor;
 };
 
+type GetLegalMovesCommand = InteractableCommand & {
+  type: 'GetLegalMoves';
+  gameID: GameInstanceID;
+  fromRow: ChessGridPosition;
+  fromCol: ChessGridPosition;
+};
+
 function squareToRowCol(square: string): { row: ChessGridPosition; col: ChessGridPosition } {
   const file = square[0];
   const rank = Number(square[1]);
-  const col = file.charCodeAt(0) - 'a'.charCodeAt(0) as ChessGridPosition;
-  const row = 8 - rank as ChessGridPosition;
+  const col = (file.charCodeAt(0) - 'a'.charCodeAt(0)) as ChessGridPosition;
+  const row = (8 - rank) as ChessGridPosition;
   return { row, col };
 }
 
@@ -59,7 +68,6 @@ export default class ChessGameArea extends GameArea<ChessGame> {
    */
   private _stateUpdated(updatedState: GameInstance<ChessGameState>) {
     if (updatedState.state.status === 'OVER') {
-
       const gameID = this._game?.id;
       if (gameID) {
         // && !this._history.find(eachResult => eachResult.gameID === gameID)) {
@@ -71,8 +79,13 @@ export default class ChessGameArea extends GameArea<ChessGame> {
          * I have no idea why this issue happens with our Chess code but not with ConnectFourGameArea.ts or TicTacToeGameArea.ts
          */
         const { white, black } = updatedState.state;
-        if (white && black && (white !== ChessGameArea._BOT_PLAYER_ID && black !== ChessGameArea._BOT_PLAYER_ID)) {
-          //games with the BOT don't count towards the leaderboard
+        if (
+          white &&
+          black &&
+          white !== ChessGameArea._BOT_PLAYER_ID &&
+          black !== ChessGameArea._BOT_PLAYER_ID
+        ) {
+          // games with the BOT don't count towards the leaderboard
           const whiteName =
             this._occupants.find(eachPlayer => eachPlayer.id === white)?.userName || white;
           const blackName =
@@ -109,7 +122,7 @@ export default class ChessGameArea extends GameArea<ChessGame> {
 
       const { row: oldRow, col: oldCol } = squareToRowCol(move.from);
       const { row: newRow, col: newCol } = squareToRowCol(move.to);
-      const promotion = move.promotion?.toUpperCase() as "Q" | "R" | "B" | "N";
+      const promotion = move.promotion?.toUpperCase() as 'Q' | 'R' | 'B' | 'N';
 
       const botMove: GameMove<ChessMove> = {
         playerID: ChessGameArea._BOT_PLAYER_ID,
@@ -248,6 +261,25 @@ export default class ChessGameArea extends GameArea<ChessGame> {
         this._stateUpdated(game.toModel());
       }
       return undefined as InteractableCommandReturnType<CommandType>;
+    }
+    if (_command.type === 'GetLegalMoves') {
+      const cmd = _command as unknown as GetLegalMovesCommand;
+      const game = this._game;
+      if (!game) {
+        throw new InvalidParametersError(GAME_NOT_IN_PROGRESS_MESSAGE);
+      }
+      if (game.id !== cmd.gameID) {
+        throw new InvalidParametersError(GAME_ID_MISSMATCH_MESSAGE);
+      }
+
+      // Ensure requester is a player in this game
+      if (game.state.white !== _player.id && game.state.black !== _player.id) {
+        throw new InvalidParametersError(PLAYER_NOT_IN_GAME_MESSAGE);
+      }
+
+      const moves = game.legalMovesFrom(cmd.fromRow, cmd.fromCol);
+
+      return { moves } as unknown as InteractableCommandReturnType<CommandType>;
     }
 
     throw new InvalidParametersError(INVALID_COMMAND_MESSAGE);

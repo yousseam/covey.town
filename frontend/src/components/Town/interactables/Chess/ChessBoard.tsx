@@ -91,6 +91,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
   const [isOurTurn, setIsOurTurn] = useState(gameAreaController.isOurTurn);
   const [isNotWhite, setisNotWhite] = useState(gameAreaController.isNotWhite); // used for flipping the board 180 degrees for black player
   const toast = useToast();
+  const [legalTargets, setLegalTargets] = useState<{ row: number; col: number }[]>([]);
 
   // if the player is black, display the board, files, and ranks upside down
   const files = isNotWhite ? [...FILES_OG].reverse() : FILES_OG;
@@ -106,7 +107,11 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
 
   useEffect(() => {
     const handleTurnChanged = (turn: boolean) => setIsOurTurn(turn);
-    const handleBoardChanged = (newBoard: ChessCell[][]) => setBoard(newBoard);
+    const handleBoardChanged = (newBoard: ChessCell[][]) => {
+      setBoard(newBoard);
+      setSelected(null);
+      setLegalTargets([]);
+    };
 
     gameAreaController.addListener('turnChanged', handleTurnChanged);
     gameAreaController.addListener('boardChanged', handleBoardChanged);
@@ -119,13 +124,13 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
     };
   }, [gameAreaController]);
 
-  const isPawnPromotionSquare = (piece: ChessCell, targetRow: number): boolean => {
+  const isPawnPromotionSquare = (piece: ChessCell, oldRow: number, targetRow: number): boolean => {
     if (!piece) return false;
-    if (piece === 'P') {
+    if (piece === 'P' && oldRow === 1) {
       // White pawn promotes when reaching top row
       return targetRow === 0;
     }
-    if (piece === 'p') {
+    if (piece === 'p' && oldRow === 6) {
       // Black pawn promotes when reaching bottom row
       return targetRow === 7;
     }
@@ -148,26 +153,59 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
 
     const piece = board[row][col];
 
+    // If a square is already selected
     if (selected) {
+      // Clicking the same square again: deselect & clear highlights
       if (selected.row === row && selected.col === col) {
         setSelected(null);
+        setLegalTargets([]);
         return;
       }
+
+      // Attempt to move to clicked square BUT only if it's one of the legal targets
+      const isLegal = legalTargets.some(t => t.row === row && t.col === col);
+      if (!isLegal) {
+        // re-select new piece if it belongs to us
+        if (piece) {
+          // switch selection; also load new legal moves for that piece
+          try {
+            const fromRow = row as ChessGridPosition;
+            const fromCol = col as ChessGridPosition;
+            const moves = await gameAreaController.getLegalMoves(fromRow, fromCol);
+            setSelected({ row, col });
+            setLegalTargets(moves);
+          } catch (e) {
+            toast({
+              title: 'Error fetching moves',
+              description: (e as Error).toString(),
+              status: 'error',
+            });
+          }
+        } else {
+          setSelected(null);
+          setLegalTargets([]);
+        }
+        return;
+      }
+
+      // Perform the move
       try {
         const oldRow = selected.row as ChessGridPosition;
         const oldCol = selected.col as ChessGridPosition;
         const newRow = row as ChessGridPosition;
         const newCol = col as ChessGridPosition;
         const movingPiece = board[selected.row][selected.col];
+
         setSelected(null);
+        setLegalTargets([]);
 
         // If this is a pawn move to promotion rank, show promotion UI instead of sending move immediately
-        if (isPawnPromotionSquare(movingPiece, newRow)) {
+        if (isPawnPromotionSquare(movingPiece, oldRow, newRow)) {
           setPendingPromotion({ oldRow, oldCol, newRow, newCol });
           return;
         }
 
-        // Normal move
+        // Make move
         await gameAreaController.makeMove(oldRow, oldCol, newRow, newCol);
       } catch (e) {
         toast({
@@ -176,8 +214,25 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
           status: 'error',
         });
       }
-    } else if (piece) {
-      setSelected({ row, col });
+
+      return;
+    }
+
+    // No square selected yet: select a piece and fetch its legal moves
+    if (piece) {
+      try {
+        const fromRow = row as ChessGridPosition;
+        const fromCol = col as ChessGridPosition;
+        const moves = await gameAreaController.getLegalMoves(fromRow, fromCol);
+        setSelected({ row, col });
+        setLegalTargets(moves);
+      } catch (e) {
+        toast({
+          title: 'Error fetching moves',
+          description: (e as Error).toString(),
+          status: 'error',
+        });
+      }
     }
   };
 
@@ -255,11 +310,20 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
                 };
 
                 const isSelected = selected?.row === row && selected?.col === col;
+                const isTarget = legalTargets.some(t => t.row === row && t.col === col);
 
                 return (
                   <StyledChessSquare
                     key={`${rank}${file}`}
-                    bg={isSelected ? (isDark ? '#464' : '#cfc') : isDark ? 'gray.600' : 'white'}
+                    bg={
+                      isSelected
+                        ? (isDark ? '#464' : '#cfc') // your existing selection colors
+                        : isTarget
+                        ? (isDark ? '#665500' : '#ffeb99') // highlight legal targets
+                        : isDark
+                        ? 'gray.600'
+                        : 'white'
+                    }
                     {...getPieceStyle(piece)}
                     {...borderStyles}
                     onClick={async () => handleClick(row, col)}

@@ -170,6 +170,28 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
       // Clear source square
       newBoard[oldRow][oldCol] = undefined;
 
+      // Detect castling: king moves two files horizontally on same rank
+      const isKing = movingPiece === 'K' || movingPiece === 'k';
+      const isSameRow = oldRow === newRow;
+      const isTwoFiles = Math.abs(newCol - oldCol) === 2;
+
+      if (isKing && isSameRow && isTwoFiles) {
+        const isKingSide = newCol > oldCol;
+
+        // From starting positions:
+        // white: e1 (7,4), rook h1 (7,7) or a1 (7,0)
+        // black: e8 (0,4), rook h8 (0,7) or a8 (0,0)
+        const rookFromCol = isKingSide ? 7 : 0;
+        const rookToCol = isKingSide ? newCol - 1 : newCol + 1;
+        const rookRow = oldRow;
+
+        const rookPiece = newBoard[rookRow][rookFromCol];
+        if (rookPiece === 'R' || rookPiece === 'r') {
+          newBoard[rookRow][rookFromCol] = undefined;
+          newBoard[rookRow][rookToCol] = rookPiece;
+        }
+      }
+
       // Handle promotion
       if (promotion && movingPiece && (movingPiece === 'P' || movingPiece === 'p')) {
         const isWhite = gamePiece === 'White';
@@ -325,5 +347,26 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
       color,
       difficulty,
     });
+  }
+  public async getLegalMoves(
+    fromRow: ChessGridPosition,
+    fromCol: ChessGridPosition,
+  ): Promise<{ row: ChessGridPosition; col: ChessGridPosition }[]> {
+    const instanceID = this._instanceID;
+    const game = this._model.game;
+
+    if (!instanceID || !game || game.state.status !== 'IN_PROGRESS') {
+      throw new Error(NO_GAME_IN_PROGRESS_ERROR);
+    }
+
+    const response = await this._townController.sendInteractableCommand(this.id, {
+      type: 'GetLegalMoves',
+      gameID: instanceID,
+      fromRow,
+      fromCol,
+    });
+
+    // Expect { moves: { row, col }[] }
+    return (response as { moves: { row: ChessGridPosition; col: ChessGridPosition }[] }).moves;
   }
 }

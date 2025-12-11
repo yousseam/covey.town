@@ -256,7 +256,7 @@ interface InteractableCommandBase {
   type: string;
 }
 
-export type InteractableCommand =  ViewingAreaUpdateCommand | JoinGameCommand | GameMoveCommand<TicTacToeMove> | GameMoveCommand<ConnectFourMove> | GameMoveCommand<ChessMove> | StartGameCommand | LeaveGameCommand | JoinBotGameCommand;
+export type InteractableCommand =  ViewingAreaUpdateCommand | JoinGameCommand | GameMoveCommand<TicTacToeMove> | GameMoveCommand<ConnectFourMove> | GameMoveCommand<ChessMove> | StartGameCommand | LeaveGameCommand | JoinBotGameCommand | GetLegalMovesCommand;
 export interface ViewingAreaUpdateCommand  {
   type: 'ViewingAreaUpdate';
   update: ViewingArea;
@@ -281,6 +281,12 @@ export interface JoinBotGameCommand {
   type: 'JoinBotGame';
   difficulty: ChessBotDifficulty;
   color: ChessColor;
+}
+export interface GetLegalMovesCommand {
+  type: 'GetLegalMoves';
+  gameID: GameInstanceID;
+  fromRow: ChessGridPosition;
+  fromCol: ChessGridPosition;
 }
 export type InteractableCommandReturnType<CommandType extends InteractableCommand> = 
   CommandType extends JoinGameCommand ? { gameID: string}:

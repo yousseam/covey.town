@@ -35,7 +35,6 @@ export type ChessEvents = GameEventTypes & {
   boardChanged: (board: ChessCell[][]) => void;
   turnChanged: (isOurTurn: boolean) => void;
   flipBoardForBlack: (flipBoardForBlack: boolean) => void;
-  // TODO: implement this
 };
 
 /**
@@ -127,7 +126,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     // Emit flipBoardForBlack event so ChessBoard can update board orientation while the board is already open
     const flipBoardForBlack = this.flipBoardForBlack;
     this.emit('flipBoardForBlack', flipBoardForBlack);
-    /** TODO: (if we ever implement functions in this file for joining and leaving game,
+    /** (if we ever implement functions in this file for joining and leaving game,
      * put these lines for emitting flipBoardForBlack in those functions instead of here
      * so that flipBoardForBlack is only emitted when a player joins/leaves the game
      * and not every time the game state updates in any way)
@@ -267,7 +266,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
    * This may be a real player ID or a synthetic one (e.g., the bot).
    */
   get winnerID(): string | undefined {
-    return this._model.game?.state.winner;
+    return this._model.game?.state?.winner;
   }
 
   /**

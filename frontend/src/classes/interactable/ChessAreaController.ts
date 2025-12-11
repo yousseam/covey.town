@@ -249,6 +249,14 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     return !!this.white && this.white?.id !== this._townController.ourPlayer.id;
   }
 
+   /**
+   * Returns the raw winner ID from the game state.
+   * This may be a real player ID or a synthetic one (e.g., the bot).
+   */
+  get winnerID(): string | undefined {
+    return this._model.game?.state.winner;
+  }
+  
   /**
    * Return the PlayerController of the winner
    * Return undefined if there is no winner yet

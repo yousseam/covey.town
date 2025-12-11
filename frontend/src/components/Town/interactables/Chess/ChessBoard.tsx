@@ -89,13 +89,13 @@ const getPieceStyle = (piece: ChessCell) => {
 export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.Element {
   const [board, setBoard] = useState<ChessCell[][]>(gameAreaController.board);
   const [isOurTurn, setIsOurTurn] = useState(gameAreaController.isOurTurn);
-  const [isNotWhite, setisNotWhite] = useState(gameAreaController.isNotWhite); // used for flipping the board 180 degrees for black player
+  const [flipBoardForBlack, setflipBoardForBlack] = useState(gameAreaController.flipBoardForBlack); // used for flipping the board 180 degrees for black player
   const toast = useToast();
   const [legalTargets, setLegalTargets] = useState<{ row: number; col: number }[]>([]);
 
   // if the player is black, display the board, files, and ranks upside down
-  const files = isNotWhite ? [...FILES_OG].reverse() : FILES_OG;
-  const ranks = isNotWhite ? [...RANKS_OG].reverse() : RANKS_OG;
+  const files = flipBoardForBlack ? [...FILES_OG].reverse() : FILES_OG;
+  const ranks = flipBoardForBlack ? [...RANKS_OG].reverse() : RANKS_OG;
 
   const [selected, setSelected] = useState<{ row: number; col: number } | null>(null);
   const [pendingPromotion, setPendingPromotion] = useState<{
@@ -115,12 +115,12 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
 
     gameAreaController.addListener('turnChanged', handleTurnChanged);
     gameAreaController.addListener('boardChanged', handleBoardChanged);
-    gameAreaController.addListener('isNotWhite', setisNotWhite);
+    gameAreaController.addListener('flipBoardForBlack', setflipBoardForBlack);
 
     return () => {
       gameAreaController.removeListener('boardChanged', handleBoardChanged);
       gameAreaController.removeListener('turnChanged', handleTurnChanged);
-      gameAreaController.removeListener('isNotWhite', setisNotWhite);
+      gameAreaController.removeListener('flipBoardForBlack', setflipBoardForBlack);
     };
   }, [gameAreaController]);
 
@@ -286,7 +286,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
       <StyledChessBoard aria-label='Chess Board'>
         {/* Main board with vertical rank labels */}
         {ranks.map((rank, rIndex) => {
-          const row = isNotWhite ? 7 - rIndex : rIndex;
+          const row = flipBoardForBlack ? 7 - rIndex : rIndex;
           return (
             <Flex key={rank}>
               {/* Rank numbers along the left side */}
@@ -298,7 +298,7 @@ export default function ChessBoard({ gameAreaController }: ChessGameProps): JSX.
 
               {/* Row of chess squares */}
               {files.map((file, fIndex) => {
-                const col = isNotWhite ? 7 - fIndex : fIndex;
+                const col = flipBoardForBlack ? 7 - fIndex : fIndex;
                 const piece = board[row]?.[col] as ChessCell;
                 const isDark = (row + col) % 2 === 1;
 

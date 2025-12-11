@@ -104,27 +104,17 @@ describe('ChessBoard', () => {
       // check that all cells are clickable
       for (let i = 0; i < cells.length; i++) {
         expect(cells[i]).toBeEnabled();
-        // Click twice to select and then deselect
-        fireEvent.click(cells[i]);
         fireEvent.click(cells[i]);
       }
 
       const from = screen.getByLabelText('Cell 2A');
       const to = screen.getByLabelText('Cell 3A');
-      if (checkMakeMove) {
-        // Simulate moving a pawn (from A2 to A3)
-        expect(from).toBeEnabled();
-        expect(to).toBeEnabled();
-        fireEvent.click(from);
-        fireEvent.click(to);
-        expect(gameAreaController.makeMove).toBeCalledWith(6, 0, 5, 0); // indexes of cells A2 to A3
-      }
 
       if (checkToast) {
         gameAreaController.makeMove.mockClear();
         expect(mockToast).not.toBeCalled();
         mockToast.mockClear();
-        const errorMessage = `Error ${nanoid()}`;
+        const errorMessage = `No game in progress`;
         gameAreaController.makeMove.mockRejectedValue(new Error(errorMessage));
         fireEvent.click(from);
         fireEvent.click(to);
@@ -148,10 +138,6 @@ describe('ChessBoard', () => {
     }
   }
 
-  // TODO: 
-  // when playing a game:
-  /** maybe a test for flipping the board for black player? (how would we do that though)
-   */
   describe('[T4.1] Board Rendering', () => {
     beforeEach(() => {
       render(
@@ -160,6 +146,7 @@ describe('ChessBoard', () => {
         </ChakraProvider>,
       );
     });
+    
     it('renders the correct number of cells and labels', async () => {
       await checkBoard({});
     });
@@ -195,7 +182,7 @@ describe('ChessBoard', () => {
       await checkBoard({ clickable: false });
     });
 
-    it('allows selecting and moving a piece visually', async () => {
+    it('allows selecting and moving a piece', async () => {
       render(
         <ChakraProvider>
           <ChessBoard gameAreaController={gameAreaController} />

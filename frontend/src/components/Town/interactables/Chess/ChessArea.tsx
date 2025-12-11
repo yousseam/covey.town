@@ -177,7 +177,7 @@ export default function ChessArea({
         onClick={handleStartGame}
         isLoading={joiningGame}
         disabled={joiningGame}>
-        Start Game (PvP)
+        Start Game
       </Button>
     );
   } else {

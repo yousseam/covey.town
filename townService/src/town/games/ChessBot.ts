@@ -2,14 +2,19 @@ import { ChessBotDifficulty } from "../../types/CoveyTownSocket";
 import StockfishEngine from "./StockfishEngine";
 import path from "path";
 
-const DEFAULT_BIN_PATH = path.resolve(
-  process.cwd(),
-  "bin",
-  "stockfish",
-  process.platform === "win32" ?
-    "stockfish-windows-x86-64-avx2.exe" :
-    "stockfish-ubuntu-x86-64-avx2"
-);
+const getBinaryPath = (): string => {
+  const envPath = process.env.STOCKFISH_BIN_PATH;
+  if (envPath) {
+    return path.isAbsolute(envPath)
+      ? envPath
+      : path.resolve(process.cwd(), envPath);
+  }
+  // fallback default path
+  const defaultBinary = process.platform === "win32"
+    ? "stockfish-windows-x86-64-avx2.exe"
+    : "stockfish-ubuntu-x86-64-avx2";
+  return path.resolve(process.cwd(), "bin", "stockfish", defaultBinary);
+};
 
 type BotMove = {
   from: string;
@@ -17,14 +22,15 @@ type BotMove = {
   promotion?: "q" | "r" | "b" | "n";
 }
 
+export const STOCKFISH_BIN_PATH = getBinaryPath();
+
 export default class ChessBot {
   private _engine: StockfishEngine;
   private _difficulty: ChessBotDifficulty;
 
-  constructor(difficulty: ChessBotDifficulty = "medium", stockfishPath?: string) {
+  constructor(difficulty: ChessBotDifficulty = "medium", stockfishPath: string = STOCKFISH_BIN_PATH) {
     this._difficulty = difficulty;
-    const binaryPath = stockfishPath ?? DEFAULT_BIN_PATH;
-    this._engine = new StockfishEngine(binaryPath);
+    this._engine = new StockfishEngine(stockfishPath);
   }
 
   private _getSearchDepth(): number {

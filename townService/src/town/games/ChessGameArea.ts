@@ -46,7 +46,7 @@ export default class ChessGameArea extends GameArea<ChessGame> {
     return 'ChessArea';
   }
 
-  private static readonly _BOT_PLAYER_ID = '_BOT_';
+  private static readonly _BOT_PLAYER_ID = 'ChessBot';
 
   private _bot?: ChessBot;
 
@@ -71,7 +71,8 @@ export default class ChessGameArea extends GameArea<ChessGame> {
          * I have no idea why this issue happens with our Chess code but not with ConnectFourGameArea.ts or TicTacToeGameArea.ts
          */
         const { white, black } = updatedState.state;
-        if (white && black) {
+        if (white && black && (white !== ChessGameArea._BOT_PLAYER_ID && black !== ChessGameArea._BOT_PLAYER_ID)) {
+          //games with the BOT don't count towards the leaderboard
           const whiteName =
             this._occupants.find(eachPlayer => eachPlayer.id === white)?.userName || white;
           const blackName =

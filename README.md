@@ -33,7 +33,7 @@ To create an account and configure your local environment:
 | `TWILIO_API_AUTH_TOKEN` | Visible on your twilio account dashboard. |
 
 #### Setting up Stockfish
-Stockfish binaries are already included for both Windows and Linux. By default, the appropriate one of these binaries will be used.
+Stockfish 64-bit binaries are already included for both Windows and Linux. By default, the appropriate one of these binaries will be used.
 
 If you want to use [your own binary](https://stockfishchess.org/download/) in a different location, you can set `STOCKFISH_BIN_PATH` in `.env`:
 

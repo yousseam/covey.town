@@ -64,7 +64,7 @@ export default function ChessArea({
           description:
             winner.id === townController.ourPlayer.id
               ? 'You won the game!'
-              : `${winner.userName} won the game.`,
+              : `${winner.userName} won the game!`,
           status: 'info',
         });
       } else if (winnerID) {
@@ -72,21 +72,21 @@ export default function ChessArea({
         if (winnerID === ourID) {
           toast({
             title: 'Game over',
-            description: 'You won the game.',
+            description: 'You won the game!',
             status: 'info',
           });
         } else {
           // Specific message for bot games
           toast({
             title: 'Game over',
-            description: 'The bot won the game.',
+            description: 'The bot won the game!',
             status: 'info',
           });
         }
       } else {
         toast({
           title: 'Game over',
-          description: 'The game ended in a draw.',
+          description: 'The game ended in a draw!',
           status: 'info',
         });
       }

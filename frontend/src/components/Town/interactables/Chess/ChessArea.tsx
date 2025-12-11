@@ -57,7 +57,7 @@ export default function ChessArea({
       const winner = gameAreaController.winner;
       const winnerID = gameAreaController.winnerID;
       const ourID = townController.ourPlayer.id;
-      
+
       if (winner) {
         toast({
           title: 'Game over',
@@ -111,6 +111,9 @@ export default function ChessArea({
     setJoiningGame(true);
     setTwoPlayerSelected(true);
     try {
+      // Reset any old bot orientation override
+      gameAreaController.resetBoardOrientation();
+
       await gameAreaController.joinGame();
     } catch (err) {
       toast({
@@ -129,6 +132,9 @@ export default function ChessArea({
     setJoiningGame(true);
     setTwoPlayerSelected(true);
     try {
+      // Reset orientation when starting a PvP game
+      gameAreaController.resetBoardOrientation();
+
       await gameAreaController.startGame();
     } catch (err) {
       toast({

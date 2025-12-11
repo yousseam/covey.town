@@ -249,6 +249,16 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
     return !!this.white && this.white?.id !== this._townController.ourPlayer.id;
   }
 
+  /**
+   * Clear any forced board orientation (used after bot games).
+   * After this, isNotWhite is derived from which player is white.
+   */
+  public resetBoardOrientation(): void {
+    this._forceIsNotWhite = null;
+    // Emit current orientation so ChessBoard updates immediately
+    this.emit('isNotWhite', this.isNotWhite);
+  }
+
    /**
    * Returns the raw winner ID from the game state.
    * This may be a real player ID or a synthetic one (e.g., the bot).
@@ -256,7 +266,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
   get winnerID(): string | undefined {
     return this._model.game?.state.winner;
   }
-  
+
   /**
    * Return the PlayerController of the winner
    * Return undefined if there is no winner yet
@@ -356,6 +366,7 @@ export default class ChessAreaController extends GameAreaController<ChessGameSta
       difficulty,
     });
   }
+
   public async getLegalMoves(
     fromRow: ChessGridPosition,
     fromCol: ChessGridPosition,
